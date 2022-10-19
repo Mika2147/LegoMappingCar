@@ -1,0 +1,2 @@
+- Umdrehung mit Hub Sensor bestimmen und dadurch perfekte 90 Grad Drehung ermöglichen
+- 2 Abstandssensoren knapp nebeneinander um zu bestimmen ob Hub gerade zu Wand steht
