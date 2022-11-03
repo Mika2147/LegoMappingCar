@@ -4,8 +4,8 @@ from mindstorms.operator import greater_than, greater_than_or_equal_to, less_tha
 import math
 
 
-MAX_WALL_DISTANCE_CM = 50
-MAX_FRONT_DISTANCE_CM = 10
+MAX_WALL_DISTANCE_CM = 25
+MAX_FRONT_DISTANCE_CM = 5
 
 MAX_TURN_ROTAIONS = 0.5
 MIN_TURN_ROTATIONS = 0.05
@@ -17,9 +17,10 @@ CORRECTION_SPEED = 0.02
 
 MAX_SPEED_CM_MOVE = 8
 
-ROTATION_ACCURACY = 1
+ROTATION_ACCURACY = 2
 
-areaMap = []
+
+areaMap = [] # TODO save the data
 mapping = True
 
 # Create your objects here.
@@ -36,32 +37,33 @@ distanceSensorFront = DistanceSensor('F')
 currentRotation = 0
 plannedRotation = 0
 
-def getDeviceRotation():
+def getDeviceRotation() -> int:
     yaw = hub.motion_sensor.get_yaw_angle()
     if(yaw < 1):
         yaw = 360 - abs(yaw)
     return yaw
 
-def getRotationGoalLeft(currentRotation, degree):
+def getRotationGoalLeft(currentRotation, degree) -> int:
     goal = currentRotation - degree
     if(goal < 0):
         goal = goal + 360
     return goal
 
-def getRotationGoalRight (currentRotation, degree):
+def getRotationGoalRight (currentRotation, degree) -> int:
     goal = currentRotation + degree
     if(goal > 359):
         goal = goal - 360
     return goal
 
-def objectInFront():
+def objectInFront() -> bool:
     frontDistance = distanceSensorFront.get_distance_cm()
     if frontDistance is not None:
         return frontDistance < MAX_FRONT_DISTANCE_CM
 
     return False
 
-def getAngleDistance(first, second):
+
+def getAngleDistance(first, second) -> int:
     res = 0
     if first > second:
         res = first - second
@@ -75,7 +77,7 @@ def getAngleDistance(first, second):
 
 
 #NEW
-def getTurnRotations(currentAngle, goal):
+def getTurnRotations(currentAngle, goal) -> float:
     rotations = 0
     if getAngleDistance(currentAngle, goal) > 30:
         rotations = MAX_TURN_ROTAIONS
@@ -83,9 +85,10 @@ def getTurnRotations(currentAngle, goal):
         rotations = MIN_TURN_ROTATIONS + (MAX_TURN_ROTAIONS - MIN_TURN_ROTATIONS) * 0.5
     else:
         rotations = MIN_TURN_ROTATIONS
+    return rotations
 
 #NEW
-def getTurnSpeed(currentAngle, goal):
+def getTurnSpeed(currentAngle, goal) -> int:
     speed = 0
     if getAngleDistance(currentAngle, goal) > 30:
         speed = MAX_TURN_SPEED
@@ -93,6 +96,7 @@ def getTurnSpeed(currentAngle, goal):
         speed = MIN_TURN_SPEED + (MAX_TURN_SPEED - MIN_TURN_SPEED) * 0.5
     else:
         speed = MIN_TURN_SPEED
+    return int(speed)
 
 
 
@@ -108,10 +112,21 @@ def rotate(toDegree, direction):
         while(currentRotation - toDegree) > ROTATION_ACCURACY or((currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
             currentRotation = getDeviceRotation()
             motorLeft.run_for_rotations(1 * getTurnRotations(currentRotation , toDegree), getTurnSpeed(currentRotation , toDegree))
-  
 
 
-def speedToGo():
+def turnAround():
+    currentRotation = getDeviceRotation()
+    toDegree = plannedRotation = getRotationGoalRight(currentRotation, 90)
+    while(currentRotation - toDegree) > ROTATION_ACCURACY or((currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
+            currentRotation = getDeviceRotation()
+            motorRight.run_for_rotations(-1 * getTurnRotations(currentRotation , toDegree), getTurnSpeed(currentRotation , toDegree))
+    toDegree = plannedRotation = getRotationGoalRight(currentRotation, 90)
+    while(currentRotation - toDegree) > ROTATION_ACCURACY or((currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
+            currentRotation = getDeviceRotation()
+            motorLeft.run_for_rotations(-1 * getTurnRotations(currentRotation , toDegree), getTurnSpeed(currentRotation , toDegree))
+
+
+def speedToGo() -> int:
     frontDistance = distanceSensorFront.get_distance_cm()
     if frontDistance is None:
         return 0
@@ -131,12 +146,14 @@ while mapping:
 
     currentRotation = getDeviceRotation()
 
-    while aimedRotation > currentRotation:
-        motorRight.run_for_rotations(-1 * CORRECTION_SPEED, 10)
+    if aimedRotation > currentRotation:
+        print("correction right")
+        rotate(aimedRotation, 1)
         currentRotation = getDeviceRotation()
 
-    while aimedRotation < currentRotation:
-        motorLeft.run_for_rotations(1 * CORRECTION_SPEED, 10)
+    if aimedRotation < currentRotation:
+        print("correction left")
+        rotate(aimedRotation, -1)
         currentRotation = getDeviceRotation()
 
     distanceLeft = distanceSensorLeft.get_distance_cm()
@@ -145,18 +162,23 @@ while mapping:
     frontHasObject = objectInFront()
 
     if frontHasObject:
-        print('front')
         if distanceLeft is not None and distanceRight is not None:
-            print('here1')
-            if distanceRight > MAX_WALL_DISTANCE_CM:
-                print('here2')
-                #motors.move(-7, 'cm', 0 ,50)
+            if distanceRight >= MAX_WALL_DISTANCE_CM:
+                print("turn right")
                 plannedRotation = getRotationGoalRight(currentRotation, 90)
-                rotate(aimedRotation, 1)
-                aimedRotation = currentRotation
-            elif distanceLeft > MAX_WALL_DISTANCE_CM:
-                print('here3')
-                #motors.move(-7, 'cm', 0 ,50)
+                rotate(plannedRotation, 1)
+                aimedRotation = plannedRotation
+            elif distanceLeft >= MAX_WALL_DISTANCE_CM:
+                print("turn left")
                 plannedRotation = getRotationGoalLeft(currentRotation, 90)
-                rotate(aimedRotation, -1)
-                aimedRotation = currentRotation
+                rotate(plannedRotation, -1)
+                aimedRotation = plannedRotation
+            else:
+                plannedRotation = getRotationGoalLeft(currentRotation, 180)
+                turnAround()
+                aimedRotation = plannedRotation
+
+        else:
+            print("correction distance is NONE")
+
+
