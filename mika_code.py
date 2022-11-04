@@ -3,7 +3,6 @@ from mindstorms.control import wait_for_seconds, wait_until, Timer
 from mindstorms.operator import greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, equal_to, not_equal_to
 import math
 
-
 MAX_WALL_DISTANCE_CM = 25
 MAX_FRONT_DISTANCE_CM = 5
 
@@ -19,8 +18,14 @@ MAX_SPEED_CM_MOVE = 8
 
 ROTATION_ACCURACY = 2
 
+MAPSIZE = 50
 
-areaMap = [] # TODO save the data
+
+areaMap = []
+currentLocation = (int(MAPSIZE / 2), int(MAPSIZE / 2))
+startingLocation = currentLocation
+#defines the direction the vehicle is moving in the map
+currentDirection = (1,0)
 mapping = True
 
 # Create your objects here.
@@ -37,24 +42,87 @@ distanceSensorFront = DistanceSensor('F')
 currentRotation = 0
 plannedRotation = 0
 
+counter = 0
+
+#initailizes the area map that saves all the waypoints
+def initAreaMap():
+    for w in range(0,MAPSIZE):
+        row = []
+        for h in range(0,MAPSIZE):
+            row.append(0)
+        areaMap.append(row)
+
+
+def printAreaMap():
+    print("-----------------------------------------------------------------------------------------")
+    for w in areaMap:
+        row = ""
+        for h in w:
+            row = row + str(h)
+        row = row + "\n"
+        print(row)
+
+def logMoveToAreaMap(cm, direction):
+    for i in range(0, cm):
+        location = (currentLocation[0] + i * direction[0], currentLocation[1] + i * direction[1])
+        areaMap[location[0]][location[1]] = 1
+
+# leftOrRight: if turn left -> -1; turn right = 1; turn around -> 0
+def changeDirection(leftOrRight):
+    if currentDirection == (1,0):
+        if leftOrRight == -1:
+            currentDirection = (0, -1)
+        elif leftOrRight == 0:
+            currentDirection = (-1 , 0)
+        elif currentDirection == 1:
+            currentDirection = (0, 1)
+    elif currentDirection == (0,1):
+        if leftOrRight == -1:
+            currentDirection = (1, 0)
+        elif leftOrRight == 0:
+            currentDirection = (0 , -1)
+        elif currentDirection == 1:
+            currentDirection = (-1, 0)
+    elif currentDirection == (-1,0):     
+        if leftOrRight == -1:
+            currentDirection = (0, 1)
+        elif leftOrRight == 0:
+            currentDirection = (1 , 0)
+        elif currentDirection == 1:
+            currentDirection = (0, -1)
+    elif currentDirection == (0,-1):
+        if leftOrRight == -1:
+            currentDirection = (-1, 0)
+        elif leftOrRight == 0:
+            currentDirection = (0 , 1)
+        elif currentDirection == 1:
+            currentDirection = (1, 0)
+
+# measures the current rotation of the vehicle
 def getDeviceRotation() -> int:
     yaw = hub.motion_sensor.get_yaw_angle()
     if(yaw < 1):
         yaw = 360 - abs(yaw)
     return yaw
 
+
+# if you want to turn left by 'degree' the this calculates your aimed angle
 def getRotationGoalLeft(currentRotation, degree) -> int:
     goal = currentRotation - degree
     if(goal < 0):
         goal = goal + 360
     return goal
 
+
+# if you want to turn right by 'degree' the this calculates your aimed angle
 def getRotationGoalRight (currentRotation, degree) -> int:
     goal = currentRotation + degree
     if(goal > 359):
         goal = goal - 360
     return goal
 
+
+# measures if there is an object in front of the vehicle
 def objectInFront() -> bool:
     frontDistance = distanceSensorFront.get_distance_cm()
     if frontDistance is not None:
@@ -63,6 +131,7 @@ def objectInFront() -> bool:
     return False
 
 
+# defines how far the second angle is from the first angle
 def getAngleDistance(first, second) -> int:
     res = 0
     if first > second:
@@ -76,7 +145,7 @@ def getAngleDistance(first, second) -> int:
     return res
 
 
-#NEW
+# defines how fast the vehicle rotates, gets slower if rotation is almost done
 def getTurnRotations(currentAngle, goal) -> float:
     rotations = 0
     if getAngleDistance(currentAngle, goal) > 30:
@@ -87,7 +156,8 @@ def getTurnRotations(currentAngle, goal) -> float:
         rotations = MIN_TURN_ROTATIONS
     return rotations
 
-#NEW
+
+# defines the speed of the vehicle when it does it's rotation, gets slower if rotation is almost done
 def getTurnSpeed(currentAngle, goal) -> int:
     speed = 0
     if getAngleDistance(currentAngle, goal) > 30:
@@ -100,7 +170,6 @@ def getTurnSpeed(currentAngle, goal) -> int:
 
 
 
-#TODO: new -> test this
 #toDegree is absolute angle in degree, direction < 0 is left and direction > 0 is right
 def rotate(toDegree, direction):
     currentRotation = getDeviceRotation()
@@ -114,6 +183,7 @@ def rotate(toDegree, direction):
             motorLeft.run_for_rotations(1 * getTurnRotations(currentRotation , toDegree), getTurnSpeed(currentRotation , toDegree))
 
 
+# does turn the vehicle around for 180 degree
 def turnAround():
     currentRotation = getDeviceRotation()
     toDegree = plannedRotation = getRotationGoalRight(currentRotation, 90)
@@ -125,7 +195,7 @@ def turnAround():
             currentRotation = getDeviceRotation()
             motorLeft.run_for_rotations(-1 * getTurnRotations(currentRotation , toDegree), getTurnSpeed(currentRotation , toDegree))
 
-
+# defines the speed of thevehicle, the closer a wall in front the slower it is
 def speedToGo() -> int:
     frontDistance = distanceSensorFront.get_distance_cm()
     if frontDistance is None:
@@ -139,10 +209,23 @@ def speedToGo() -> int:
     else:
         return MAX_SPEED_CM_MOVE / 16
 
+
+
+# MAIN BEGINS HERE
+initAreaMap()
+printAreaMap()
 aimedRotation = getDeviceRotation()
 
 while mapping:
-    motors.move(speedToGo(), 'cm', 0, 50)
+    currentSpeed = speedToGo()
+    motors.move(currentSpeed, 'cm', 0, 50)
+
+    logMoveToAreaMap(currentSpeed, currentDirection)
+
+    counter = counter + 1
+    if(counter > 9):
+        counter = 0
+        printAreaMap()
 
     currentRotation = getDeviceRotation()
 
@@ -168,15 +251,18 @@ while mapping:
                 plannedRotation = getRotationGoalRight(currentRotation, 90)
                 rotate(plannedRotation, 1)
                 aimedRotation = plannedRotation
+                changeDirection(1)
             elif distanceLeft >= MAX_WALL_DISTANCE_CM:
                 print("turn left")
                 plannedRotation = getRotationGoalLeft(currentRotation, 90)
                 rotate(plannedRotation, -1)
                 aimedRotation = plannedRotation
+                changeDirection(-1)
             else:
                 plannedRotation = getRotationGoalLeft(currentRotation, 180)
                 turnAround()
                 aimedRotation = plannedRotation
+                changeDirection(0)
 
         else:
             print("correction distance is NONE")
