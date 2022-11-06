@@ -3,6 +3,7 @@ import time
 CAR = 1
 WALL = 2
 EMPTY = 3
+TARGET = 4
 STRAIGHT = 1
 LEFT = 2
 RIGHT = 3
@@ -21,9 +22,9 @@ MAZE = [
 FOUND = False
 
 
-def printMaze(maze):
+def printMaze():
     print("+-------------+")
-    for line in maze:
+    for line in MAZE:
         print("| ", end="")
         for elem in line:
             if elem == WALL:
@@ -49,12 +50,16 @@ def getNewMovement():
     return STRAIGHT
 
 
-def updateMaze(movement, carPosition):
-    if movement == STRAIGHT:
-        x, y = carPosition
+def updateMaze():
+    if getNewMovement() == STRAIGHT:
+        x, y = findCarPosition(MAZE)
         if MAZE[x-1][y] == EMPTY:
             MAZE[x][y] = EMPTY
             MAZE[x-1][y] = CAR
+        elif MAZE[x-1][y] == TARGET:
+            FOUND = True
+            print("Found the Target!")
+            exit()
         else:
             print("Render issues, Car is going to drive in the Wall..")
             exit()
@@ -65,8 +70,8 @@ def wait():
 
 
 while not FOUND:
-    printMaze(MAZE)
-    updateMaze(getNewMovement(), findCarPosition(MAZE))
+    printMaze()
+    updateMaze()
     wait()
 
 
