@@ -19,15 +19,23 @@ MAX_SPEED_CM_MOVE = 8
 
 ROTATION_ACCURACY = 2
 
-MAPSIZE = 50
+TURN_AROUND_OFFSET = 0
 
+# Knoten
+# (id, Kante1, Kante2, Kante3, Kante 4)
+# Kante
+# (Richtung x, Richtung y, Zielknoten, Entfernung)
+# -1 means unknown
+# -2 means no destiantion
+nodes = {}
 
-areaMap = []
-currentLocation = (int(MAPSIZE / 2), int(MAPSIZE / 2))
-startingLocation = currentLocation
 #defines the direction the vehicle is moving in the map
 currentDirection = (1,0)
+currentDistanceFromLastNode = 0
+currentNode = 0
+currentDestination = 1
 mapping = True
+nodeIdCounter = 1
 
 # Create your objects here.
 hub = MSHub()
@@ -45,60 +53,72 @@ plannedRotation = 0
 
 counter = 0
 
-#initailizes the area map that saves all the waypoints
-def initAreaMap():
-    for w in range(0,MAPSIZE):
-        row = []
-        for h in range(0,MAPSIZE):
-            row.append(0)
-        areaMap.append(row)
+def directionPosition(directionX, directionY) -> int:
+    ret = -1
+    if(directionX == 1):
+        ret = 1
+    elif (directionX == - 1):
+        ret = 3
+    elif(directionY == 1):
+        ret = 2
+    elif(directionY == -1):
+        ret = 4
+    return ret
 
 
-def printAreaMap():
-    print("-----------------------------------------------------------------------------------------")
-    for w in areaMap:
-        row = ""
-        for h in w:
-            row = row + str(h)
-        row = row + "\n"
-        print(row)
+def createEmptyNode(id):
+    nodes[id] = (id, (1, 0, -1, -1), (0, 1, -1 , -1), (-1, 0, -1, -1), (0, -1, -1, -1))
 
-def logMoveToAreaMap(cm, direction):
-    for i in range(0, cm):
-        location = (currentLocation[0] + i * direction[0], currentLocation[1] + i * direction[1])
-        areaMap[location[0]][location[1]] = 1
+def updateEdge(node_id, directionX, directionY, destinationId, distance):
+    if(nodes[destinationId] == None):
+        createEmptyNode(destinationId)
+    currentEdge = (currentDirection[0], currentDirection[1], currentDestination, distance)
+    reverseEdge = (-currentDirection[0], -currentDirection[1], node_id, currentDistanceFromLastNode)
+    nodes[node_id][directionPosition(directionX, directionY)] = currentEdge
+    nodes[destinationId][directionPosition(-directionX, -directionY)] = reverseEdge
+
+def hasAlreadyCheckedDirection(node, leftOrRight):
+    pos = directionPosition(getAbsoluteDirection(leftOrRight))
+    return nodes[node][pos][2] != -1
+
+
+def getAbsoluteDirection(leftOrRight):
+    res = (0, 0)
+    global currentDirection
+    if currentDirection == (1,0):
+        if leftOrRight == -1:
+            res = (0, -1)
+        elif leftOrRight == 0:
+            res = (-1 , 0)
+        elif currentDirection == 1:
+            res = (0, 1)
+    elif currentDirection == (0,1):
+        if leftOrRight == -1:
+            res = (1, 0)
+        elif leftOrRight == 0:
+            res = (0 , -1)
+        elif currentDirection == 1:
+            res = (-1, 0)
+    elif currentDirection == (-1,0):     
+        if leftOrRight == -1:
+            res = (0, 1)
+        elif leftOrRight == 0:
+            res = (1 , 0)
+        elif currentDirection == 1:
+            res = (0, -1)
+    elif currentDirection == (0,-1):
+        if leftOrRight == -1:
+            res = (-1, 0)
+        elif leftOrRight == 0:
+            res = (0 , 1)
+        elif currentDirection == 1:
+            res = (1, 0)
+    return res
 
 # leftOrRight: if turn left -> -1; turn right = 1; turn around -> 0
 def changeDirection(leftOrRight):
     global currentDirection
-    if currentDirection == (1,0):
-        if leftOrRight == -1:
-            currentDirection = (0, -1)
-        elif leftOrRight == 0:
-            currentDirection = (-1 , 0)
-        elif currentDirection == 1:
-            currentDirection = (0, 1)
-    elif currentDirection == (0,1):
-        if leftOrRight == -1:
-            currentDirection = (1, 0)
-        elif leftOrRight == 0:
-            currentDirection = (0 , -1)
-        elif currentDirection == 1:
-            currentDirection = (-1, 0)
-    elif currentDirection == (-1,0):     
-        if leftOrRight == -1:
-            currentDirection = (0, 1)
-        elif leftOrRight == 0:
-            currentDirection = (1 , 0)
-        elif currentDirection == 1:
-            currentDirection = (0, -1)
-    elif currentDirection == (0,-1):
-        if leftOrRight == -1:
-            currentDirection = (-1, 0)
-        elif leftOrRight == 0:
-            currentDirection = (0 , 1)
-        elif currentDirection == 1:
-            currentDirection = (1, 0)
+    currentDirection = getAbsoluteDirection(leftOrRight)
 
 # measures the current rotation of the vehicle
 def getDeviceRotation() -> int:
@@ -239,20 +259,13 @@ def speedToGo() -> int:
 
 
 # MAIN BEGINS HERE
-initAreaMap()
-#printAreaMap()
 aimedRotation = getDeviceRotation()
+createEmptyNode(0)
 
 while mapping:
     currentSpeed = speedToGo()
     motors.move(currentSpeed, 'cm', 0, 50)
-
-    #logMoveToAreaMap(currentSpeed, currentDirection)
-
-    counter = counter + 1
-    if(counter > 9):
-        counter = 0
-        #printAreaMap()
+    currentDistanceFromLastNode = currentDistanceFromLastNode + currentSpeed
 
     currentRotation = getDeviceRotation()
 
@@ -267,27 +280,38 @@ while mapping:
         if distanceLeft is not None and distanceRight is not None:
             print("Left: " + str(distanceLeft))
             print("Right: " + str(distanceRight))
+            updateEdge(currentNode, currentDirection[0], currentDirection[1], currentDestination, currentDistanceFromLastNode)
+            currentDistanceFromLastNode = 0
+            currentNode = currentDestination
+            goalset = 0
             if distanceRight >= MAX_WALL_DISTANCE_CM:
-                print("turn right")
-                plannedRotation = getRotationGoalRight(currentRotation, 90)
-                rotate(plannedRotation, 1)
-                aimedRotation = plannedRotation
-                changeDirection(1)
-            elif distanceLeft >= MAX_WALL_DISTANCE_CM:
-                print("turn left")
-                plannedRotation = getRotationGoalLeft(currentRotation, 90)
-                rotate(plannedRotation, -1)
-                aimedRotation = plannedRotation
-                changeDirection(-1)
-            else:
+                if not hasAlreadyCheckedDirection(currentNode, 1):
+                    print("turn right")
+                    plannedRotation = getRotationGoalRight(currentRotation, 90)
+                    rotate(plannedRotation, 1)
+                    aimedRotation = plannedRotation
+                    changeDirection(1)
+                    goalset = 1
+            if distanceLeft >= MAX_WALL_DISTANCE_CM and goalset == 0:
+                if not hasAlreadyCheckedDirection(currentNode, -1):
+                    print("turn left")
+                    plannedRotation = getRotationGoalLeft(currentRotation, 90)
+                    rotate(plannedRotation, -1)
+                    aimedRotation = plannedRotation
+                    changeDirection(-1)
+                    goalset = 1
+            if goalset == 0:
                 plannedRotation = getRotationGoalLeft(currentRotation, 180)
                 turnAround()
                 aimedRotation = plannedRotation
                 changeDirection(0)
+                currentDistanceFromLastNode = currentDistanceFromLastNode + TURN_AROUND_OFFSET
+                goalset = 1
 
-        elif distanceLeft is None:
-            print("distasnceLeft is NONE")
-        elif distanceRight is None:
-            print("distanceRight is NONE")
+        else:
+            if distanceLeft is None:
+                print("distasnceLeft is NONE")
+            if distanceRight is None:
+                print("distanceRight is NONE")
 
 
