@@ -12,7 +12,8 @@ MIN_TURN_ROTATIONS = 0.05
 MAX_TURN_SPEED = 50
 MIN_TURN_SPEED = 5
 
-CORRECTION_SPEED = 0.02
+CORRECTION_SPEED = 1
+CORRECTION_ROTATIONS = 0.01
 
 MAX_SPEED_CM_MOVE = 8
 
@@ -69,6 +70,7 @@ def logMoveToAreaMap(cm, direction):
 
 # leftOrRight: if turn left -> -1; turn right = 1; turn around -> 0
 def changeDirection(leftOrRight):
+    global currentDirection
     if currentDirection == (1,0):
         if leftOrRight == -1:
             currentDirection = (0, -1)
@@ -169,10 +171,35 @@ def getTurnSpeed(currentAngle, goal) -> int:
     return int(speed)
 
 
+def getBestCorrectionDirection(current, goal) -> int:
+    tempgoal = goal
+    if goal < current:
+        tempgoal = goal + 360
+    tempres = tempgoal - current
+    if tempres is 0:
+        return 0
+    if tempres < 180:
+        return tempres
+    else:
+        return tempres - 360
+
+def correction(toDegree):
+    currentRotation = getDeviceRotation()
+    while getBestCorrectionDirection(currentRotation, toDegree) > ROTATION_ACCURACY:
+        print("correction right")
+        motorRight.run_for_rotations(-1 * CORRECTION_ROTATIONS, CORRECTION_SPEED)
+        currentRotation = getDeviceRotation()
+    while getBestCorrectionDirection(currentRotation, toDegree) < (-1* ROTATION_ACCURACY):
+        print("correction left")
+        motorLeft.run_for_rotations(1 * CORRECTION_ROTATIONS, CORRECTION_SPEED)
+        currentRotation = getDeviceRotation()
+
 
 #toDegree is absolute angle in degree, direction < 0 is left and direction > 0 is right
 def rotate(toDegree, direction):
     currentRotation = getDeviceRotation()
+    print("Current rotation:" + str(currentRotation))
+    print("Goal: " + str(toDegree))
     if direction > 0:
         while(currentRotation - toDegree) > ROTATION_ACCURACY or((currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
             currentRotation = getDeviceRotation()
@@ -213,31 +240,23 @@ def speedToGo() -> int:
 
 # MAIN BEGINS HERE
 initAreaMap()
-printAreaMap()
+#printAreaMap()
 aimedRotation = getDeviceRotation()
 
 while mapping:
     currentSpeed = speedToGo()
     motors.move(currentSpeed, 'cm', 0, 50)
 
-    logMoveToAreaMap(currentSpeed, currentDirection)
+    #logMoveToAreaMap(currentSpeed, currentDirection)
 
     counter = counter + 1
     if(counter > 9):
         counter = 0
-        printAreaMap()
+        #printAreaMap()
 
     currentRotation = getDeviceRotation()
 
-    if aimedRotation > currentRotation:
-        print("correction right")
-        rotate(aimedRotation, 1)
-        currentRotation = getDeviceRotation()
-
-    if aimedRotation < currentRotation:
-        print("correction left")
-        rotate(aimedRotation, -1)
-        currentRotation = getDeviceRotation()
+    correction(aimedRotation)
 
     distanceLeft = distanceSensorLeft.get_distance_cm()
     distanceRight = distanceSensorRight.get_distance_cm()
@@ -246,6 +265,8 @@ while mapping:
 
     if frontHasObject:
         if distanceLeft is not None and distanceRight is not None:
+            print("Left: " + str(distanceLeft))
+            print("Right: " + str(distanceRight))
             if distanceRight >= MAX_WALL_DISTANCE_CM:
                 print("turn right")
                 plannedRotation = getRotationGoalRight(currentRotation, 90)
@@ -264,7 +285,9 @@ while mapping:
                 aimedRotation = plannedRotation
                 changeDirection(0)
 
-        else:
-            print("correction distance is NONE")
+        elif distanceLeft is None:
+            print("distasnceLeft is NONE")
+        elif distanceRight is None:
+            print("distanceRight is NONE")
 
 
