@@ -23,6 +23,7 @@ MAX_FRONT_DISTANCE_CM = 5
 
 MAX_TURN_ROTAIONS = 0.5
 MIN_TURN_ROTATIONS = 0.05
+ABSOLUTE_MIN_TURN_ROTATIONS = 0.01
 
 MAX_TURN_SPEED = 50
 MIN_TURN_SPEED = 5
@@ -32,7 +33,7 @@ CORRECTION_ROTATIONS = 0.01
 
 MAX_SPEED_CM_MOVE = 8
 
-ROTATION_ACCURACY = 2
+ROTATION_ACCURACY = 1
 
 TURN_AROUND_OFFSET = 0
 
@@ -127,7 +128,6 @@ def compareArrays(first, second) -> bool:
     return True
 
 def getAbsoluteDirection(leftOrRight):
-    #TODO: comparison doesnt work
     res = [0, 0]
     global currentDirection
     print("current direction:" + str(currentDirection) + " leftorright:" + str(leftOrRight))
@@ -225,10 +225,12 @@ def getTurnRotations(currentAngle, goal) -> float:
     rotations = 0
     if getAngleDistance(currentAngle, goal) > 30:
         rotations = MAX_TURN_ROTAIONS
-    elif getAngleDistance(currentAngle, goal) > 15:
+    elif getAngleDistance(currentAngle, goal) > 20:
         rotations = MIN_TURN_ROTATIONS + (MAX_TURN_ROTAIONS - MIN_TURN_ROTATIONS) * 0.5
-    else:
+    elif getAngleDistance(currentAngle, goal) > 4:
         rotations = MIN_TURN_ROTATIONS
+    else:
+        rotations = ABSOLUTE_MIN_TURN_ROTATIONS
     return rotations
 
 
@@ -237,7 +239,7 @@ def getTurnSpeed(currentAngle, goal) -> int:
     speed = 0
     if getAngleDistance(currentAngle, goal) > 30:
         speed = MAX_TURN_SPEED
-    elif getAngleDistance(currentAngle, goal) > 15:
+    elif getAngleDistance(currentAngle, goal) > 20:
         speed = MIN_TURN_SPEED + (MAX_TURN_SPEED - MIN_TURN_SPEED) * 0.5
     else:
         speed = MIN_TURN_SPEED
@@ -327,6 +329,11 @@ def speedToGo():
     else:
         return MAX_SPEED_CM_MOVE / 16
 
+def driveToNode(currentNode, direction):
+    way = nodes[currentNode][directionPosition(direction[0], direction[1])]
+    motors.move(way[3], "cm", 0, 50)
+    currentDestination = way[2]
+
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
@@ -357,32 +364,37 @@ while mapping:
                 currentDestination,
                 currentDistanceFromLastNode,
             )
+            print("Updated nodes: \n" + str(nodes))
             currentDistanceFromLastNode = 0
             goalset = 0
             if distanceRight >= MAX_WALL_DISTANCE_CM:
-                if not hasAlreadyCheckedDirection(currentNode, 1):
-                    print("turn right")
-                    plannedRotation = getRotationGoalRight(currentRotation, 90)
-                    rotate(plannedRotation, 1)
-                    aimedRotation = plannedRotation
-                    changeDirection(1)
-                    lastDestination = currentNode
-                    currentNode = currentDestination
+                print("turn right")
+                plannedRotation = getRotationGoalRight(currentRotation, 90)
+                rotate(plannedRotation, 1)
+                aimedRotation = plannedRotation
+                lastDestination = currentNode
+                currentNode = currentDestination
+                if hasAlreadyCheckedDirection(currentNode, 1):
+                    driveToNode(currentNode, getAbsoluteDirection(1))
+                else:
                     nodeIdCounter = nodeIdCounter + 1
-                    currentDestination = nodeIdCounter
-                    goalset = 1
+                    currentDestination = nodeIdCounter       
+                changeDirection(1)         
+                goalset = 1
             if distanceLeft >= MAX_WALL_DISTANCE_CM and goalset == 0:
-                if not hasAlreadyCheckedDirection(currentNode, -1):
-                    print("turn left")
-                    plannedRotation = getRotationGoalLeft(currentRotation, 90)
-                    rotate(plannedRotation, -1)
-                    aimedRotation = plannedRotation
-                    changeDirection(-1)
-                    lastDestination = currentNode
-                    currentNode = currentDestination
+                print("turn left")
+                plannedRotation = getRotationGoalLeft(currentRotation, 90)
+                rotate(plannedRotation, -1)
+                aimedRotation = plannedRotation
+                lastDestination = currentNode
+                currentNode = currentDestination
+                if hasAlreadyCheckedDirection(currentNode, -1):
+                    driveToNode(currentNode, getAbsoluteDirection(-1))
+                else:
                     nodeIdCounter = nodeIdCounter + 1
                     currentDestination = nodeIdCounter
-                    goalset = 1
+                changeDirection(-1)  
+                goalset = 1
             if goalset == 0:
                 print("turn around")
                 plannedRotation = getRotationGoalLeft(currentRotation, 180)
@@ -397,7 +409,6 @@ while mapping:
                 currentDestination = lastDestination
                 goalset = 1
 
-            print("Updated nodes: \n" + str(nodes))
 
         else:
             if distanceLeft is None:
