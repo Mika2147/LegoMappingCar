@@ -107,14 +107,7 @@ def hasAlreadyCheckedDirection(node, leftOrRight):
     pos = directionPosition(absoluteDirection[0], absoluteDirection[1])
     if node in nodes:
         ret = nodes[node][pos][2] != -1
-        print(
-            "Node "
-            + str(node)
-            + " pos: "
-            + str(pos)
-            + " val: "
-            + str(nodes[node][pos][2])
-        )
+        print(f"Node {node} Position {pos} Value {nodes[node][pos][2]}")
     return ret
 
 
@@ -132,12 +125,7 @@ def compareArrays(first, second):
 def getAbsoluteDirection(leftOrRight):
     res = [0, 0]
     global currentDirection
-    print(
-        "current direction:"
-        + str(currentDirection)
-        + " leftorright:"
-        + str(leftOrRight)
-    )
+    print(f"Direction {currentDestination} Left-or-Right {leftOrRight}")
     if compareArrays(currentDirection, [1, 0]):
         if leftOrRight == -1:
             res = [0, -1]
@@ -280,8 +268,7 @@ def correction(toDegree):
 # toDegree is absolute angle in degree, direction < 0 is left and direction > 0 is right
 def rotate(toDegree, direction):
     currentRotation = getDeviceRotation()
-    print("Current rotation:" + str(currentRotation))
-    print("Goal: " + str(toDegree))
+    print(f"Rotation {currentRotation} Goal {toDegree}")
     if direction > 0:
         while (currentRotation - toDegree) > ROTATION_ACCURACY or (
             (currentRotation - toDegree) < -1 * ROTATION_ACCURACY
@@ -352,16 +339,7 @@ def driveToNode(direction):
     global currentDestination
     rot = getDeviceRotation()
     way = nodes[currentNode][directionPosition(direction[0], direction[1])]
-    print(
-        "Current node: "
-        + str(currentNode)
-        + " last node: "
-        + str(lastDestination)
-        + " current destiantion: "
-        + str(currentDestination)
-        + " way: "
-        + str(way)
-    )
+    print(f"Node {currentNode} LastNode {lastDestination} CurrentDestination {currentDestination} Way {way}")
     distance = way[3]
     while distance > 5:
         motors.move(5, "cm", 0, 30)
@@ -373,7 +351,7 @@ def driveToNode(direction):
     currentNode = way[2]
 
 
-# MAIN BEGINS HERE -> Hub doesn't detect __name__ Variable, so .. :D 
+# MAIN BEGINS HERE -> Hub doesn't detect __name__ Variable, so .. :D
 aimedRotation = getDeviceRotation()
 createEmptyNode(0)
 
@@ -393,8 +371,8 @@ while mapping:
 
     if frontHasObject:
         if distanceLeft is not None and distanceRight is not None:
-            print("Left: " + str(distanceLeft))
-            print("Right: " + str(distanceRight))
+            print(f"Left {distanceLeft}")
+            print(f"Right {distanceRight}")
             if currentDistanceFromLastNode > 25:
                 updateEdge(
                     currentNode,
@@ -406,11 +384,11 @@ while mapping:
                 lastDestination = currentNode
                 currentNode = currentDestination
 
-            print("Updated nodes: \n" + str(nodes))
+            print(f"Updated nodes {nodes}")
             currentDistanceFromLastNode = 0
             goalset = 0
             if distanceRight >= MAX_WALL_DISTANCE_CM:
-                print("turn right")
+                print("Turn Right")
                 plannedRotation = getRotationGoalRight(currentRotation, 90)
                 rotate(plannedRotation, 1)
                 aimedRotation = plannedRotation
@@ -424,7 +402,7 @@ while mapping:
                 changeDirection(1)
                 goalset = 1
             if distanceLeft >= MAX_WALL_DISTANCE_CM and goalset == 0:
-                print("turn left")
+                print("Turn Left")
                 plannedRotation = getRotationGoalLeft(currentRotation, 90)
                 rotate(plannedRotation, -1)
                 aimedRotation = plannedRotation
@@ -437,7 +415,7 @@ while mapping:
                 changeDirection(-1)
                 goalset = 1
             if goalset == 0:
-                print("turn around")
+                print("Turn Around")
                 plannedRotation = getRotationGoalLeft(currentRotation, 180)
                 turnAround()
                 aimedRotation = plannedRotation
