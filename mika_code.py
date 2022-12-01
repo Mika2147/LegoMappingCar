@@ -336,7 +336,10 @@ def speedToGo():
     else:
         return MAX_SPEED_CM_MOVE / 16
 
-def driveToNode(currentNode, direction):
+def driveToNode(direction):
+    global currentNode
+    global lastDestination
+    global currentDestination
     rot = getDeviceRotation()
     way = nodes[currentNode][directionPosition(direction[0], direction[1])]
     print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
@@ -395,7 +398,7 @@ while mapping:
                 aimedRotation = plannedRotation
 
                 if hasAlreadyCheckedDirection(currentNode, 1):
-                    driveToNode(currentNode, getAbsoluteDirection(1))
+                    driveToNode(getAbsoluteDirection(1))
                 else:
                     currentNode = currentDestination
                     nodeIdCounter = nodeIdCounter + 1
@@ -409,7 +412,7 @@ while mapping:
                 aimedRotation = plannedRotation
 
                 if hasAlreadyCheckedDirection(currentNode, -1):
-                    driveToNode(currentNode, getAbsoluteDirection(-1))
+                    driveToNode(getAbsoluteDirection(-1))
                 else:
                     nodeIdCounter = nodeIdCounter + 1
                     currentDestination = nodeIdCounter
@@ -421,7 +424,7 @@ while mapping:
                 turnAround()
                 aimedRotation = plannedRotation
 
-                driveToNode(currentNode, getAbsoluteDirection(0))
+                driveToNode(getAbsoluteDirection(0))
                 changeDirection(0)
                 nodeIdCounter = nodeIdCounter + 1
                 currentDestination = nodeIdCounter
