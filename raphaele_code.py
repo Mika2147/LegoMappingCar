@@ -154,7 +154,7 @@ def getAbsoluteDirection(leftOrRight):
             res = [0, 1]
         elif leftOrRight == 1:
             res = [1, 0]
-    print("result = " + str(res))
+    print(f"Result {res}")
     return res
 
 
