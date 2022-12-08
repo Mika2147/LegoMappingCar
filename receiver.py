@@ -1,4 +1,12 @@
-from spike import PrimeHub
+from mindstorms import (
+    MSHub,
+    Motor,
+    MotorPair,
+    ColorSensor,
+    DistanceSensor,
+    ForceSensor,
+    App,
+)
 from spike.control import wait_for_seconds
 import ubluetooth
 import ustruct
@@ -28,7 +36,7 @@ def crc32(buf):
         c = crc_table[(c ^ buf[i]) & 0xFF] ^ (c >> 8)
     return c ^ 0xFFFFFFFF
 
-hub = PrimeHub()
+hub = MSHub()
 ble = ubluetooth.BLE()
 transmission_id = None
 

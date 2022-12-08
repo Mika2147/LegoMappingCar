@@ -2,11 +2,22 @@ from mindstorms import (
     MSHub,
     Motor,
     MotorPair,
+    ColorSensor,
     DistanceSensor,
+    ForceSensor,
+    App,
 )
+from mindstorms.control import wait_for_seconds, wait_until, Timer
+from mindstorms.operator import (
+    greater_than,
+    greater_than_or_equal_to,
+    less_than,
+    less_than_or_equal_to,
+    equal_to,
+    not_equal_to,
+)
+import math
 
-MAX_WALL_DISTANCE_CM = 30
-MAX_FRONT_DISTANCE_CM = 5
 
 MAX_TURN_ROTAIONS = 0.5
 MIN_TURN_ROTATIONS = 0.05
@@ -23,24 +34,20 @@ MAX_SPEED_CM_MOVE = 8
 ROTATION_ACCURACY = 10
 CORRECTION_ACCURACY = 1
 
-TURN_AROUND_OFFSET = 0
-
 # Knoten
 # (id, Kante1, Kante2, Kante3, Kante 4)
 # Kante
 # (Richtung x, Richtung y, Zielknoten, Entfernung)
 # -1 means unknown
 # -2 means no destiantion
-nodes = {}
+nodes = {0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 1: [1, [1, 0, -1, -1], [0, 1, 2, 112.0], [-1, 0, 0, 48.5], [0, -1, -1, -1]], 2: [2, [1, 0, 4, 48.0], [0, 1, -1, -1], [-1, 0, 3, 67.0], [0, -1, 1, 112.0]], 3: [3, [1, 0, 2, 67.0], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 4: [4, [1, 0, -1, -1], [0, 1, -1, -1], [-1, 0, 2, 48.0], [0, -1, 5, 132.5]], 5: [5, [1, 0, -1, -1], [0, 1, 4, 132.5], [-1, 0, -1, -1], [0, -1, -1, -1]]}
 
 # defines the direction the vehicle is moving in the map
 currentDirection = [1, 0]
 currentDistanceFromLastNode = 0
 currentNode = 0
 currentDestination = 1
-lastDestination = 1
-mapping = True
-nodeIdCounter = 1
+searching = True
 
 hub = MSHub()
 
@@ -48,15 +55,10 @@ motorLeft = Motor("A")
 motorRight = Motor("B")
 motors = MotorPair("A", "B")
 
-distanceSensorLeft = DistanceSensor("C")
-distanceSensorRight = DistanceSensor("D")
-distanceSensorFront = DistanceSensor("F")
-
 currentRotation = 0
 plannedRotation = 0
 
-counter = 0
-
+colorSensor = ColorSensor('F')
 
 def directionPosition(directionX, directionY):
     ret = -1
@@ -70,62 +72,10 @@ def directionPosition(directionX, directionY):
         ret = 4
     return ret
 
-
-def createEmptyNode(myid):
-    nodes[myid] = [
-        myid,
-        [1, 0, -1, -1],
-        [0, 1, -1, -1],
-        [-1, 0, -1, -1],
-        [0, -1, -1, -1],
-    ]
-
-
-def updateEdge(node_id, directionX, directionY, destinationId, distance):
-    if destinationId not in nodes:
-        createEmptyNode(destinationId)
-    currentEdge = [
-        currentDirection[0],
-        currentDirection[1],
-        currentDestination,
-        distance,
-    ]
-    reverseEdge = [
-        -currentDirection[0],
-        -currentDirection[1],
-        node_id,
-        currentDistanceFromLastNode,
-    ]
-    nodes[node_id][directionPosition(directionX, directionY)] = currentEdge
-    if destinationId in nodes:
-        nodes[destinationId][directionPosition(-directionX, -directionY)] = reverseEdge
-
-
-def hasAlreadyCheckedDirection(node, leftOrRight):
-    ret = False
-    absoluteDirection = getAbsoluteDirection(leftOrRight)
-    pos = directionPosition(absoluteDirection[0], absoluteDirection[1])
-    if node in nodes:
-        ret = nodes[node][pos][2] != -1
-        print(f"Node {node} Position {pos} Value {nodes[node][pos][2]}")
-    return ret
-
-
-def compareArrays(first, second):
-    if len(first) != len(second):
-        return False
-
-    for i in range(0, len(first)):
-        if first[i] != second[i]:
-            return False
-
-    return True
-
-
 def getAbsoluteDirection(leftOrRight):
     res = [0, 0]
     global currentDirection
-    print(f"Direction {currentDestination} Left-or-Right {leftOrRight}")
+    print("current direction:" + str(currentDirection) + " leftorright:" + str(leftOrRight))
     if compareArrays(currentDirection, [1, 0]):
         if leftOrRight == -1:
             res = [0, -1]
@@ -133,7 +83,7 @@ def getAbsoluteDirection(leftOrRight):
             res = [-1, 0]
         elif leftOrRight == 1:
             res = [0, 1]
-    elif compareArrays(currentDirection, [0, 1]):
+    elif compareArrays(currentDirection,[0, 1]):
         if leftOrRight == -1:
             res = [1, 0]
         elif leftOrRight == 0:
@@ -154,23 +104,19 @@ def getAbsoluteDirection(leftOrRight):
             res = [0, 1]
         elif leftOrRight == 1:
             res = [1, 0]
-    print(f"Result {res}")
+    print("result = " + str(res))
     return res
 
-
-# leftOrRight: if turn left -> -1; turn right = 1; turn around -> 0
 def changeDirection(leftOrRight):
     global currentDirection
     currentDirection = getAbsoluteDirection(leftOrRight)
 
 
-# measures the current rotation of the vehicle
 def getDeviceRotation():
     yaw = hub.motion_sensor.get_yaw_angle()
     if yaw < 1:
         yaw = 360 - abs(yaw)
     return yaw
-
 
 # if you want to turn left by 'degree' the this calculates your aimed angle
 def getRotationGoalLeft(currentRotation, degree):
@@ -179,7 +125,6 @@ def getRotationGoalLeft(currentRotation, degree):
         goal = goal + 360
     return goal
 
-
 # if you want to turn right by 'degree' the this calculates your aimed angle
 def getRotationGoalRight(currentRotation, degree):
     goal = currentRotation + degree
@@ -187,18 +132,8 @@ def getRotationGoalRight(currentRotation, degree):
         goal = goal - 360
     return goal
 
-
-# measures if there is an object in front of the vehicle
-def objectInFront():
-    frontDistance = distanceSensorFront.get_distance_cm()
-    if frontDistance is not None:
-        return frontDistance < MAX_FRONT_DISTANCE_CM
-
-    return False
-
-
 # defines how far the second angle is from the first angle
-def getAngleDistance(first, second):
+def getAngleDistance(first, second) -> int:
     res = 0
     if first > second:
         res = first - second
@@ -210,9 +145,8 @@ def getAngleDistance(first, second):
             res = first + 360 - second
     return res
 
-
 # defines how fast the vehicle rotates, gets slower if rotation is almost done
-def getTurnRotations(currentAngle, goal):
+def getTurnRotations(currentAngle, goal) -> float:
     rotations = 0
     if getAngleDistance(currentAngle, goal) > 30:
         rotations = MAX_TURN_ROTAIONS
@@ -224,9 +158,8 @@ def getTurnRotations(currentAngle, goal):
         rotations = ABSOLUTE_MIN_TURN_ROTATIONS
     return rotations
 
-
 # defines the speed of the vehicle when it does it's rotation, gets slower if rotation is almost done
-def getTurnSpeed(currentAngle, goal):
+def getTurnSpeed(currentAngle, goal) -> int:
     speed = 0
     if getAngleDistance(currentAngle, goal) > 30:
         speed = MAX_TURN_SPEED
@@ -236,8 +169,7 @@ def getTurnSpeed(currentAngle, goal):
         speed = MIN_TURN_SPEED
     return int(speed)
 
-
-def getBestCorrectionDirection(current, goal):
+def getBestCorrectionDirection(current, goal) -> int:
     tempgoal = goal
     if goal < current:
         tempgoal = goal + 360
@@ -252,27 +184,24 @@ def getBestCorrectionDirection(current, goal):
 
 def correction(toDegree):
     currentRotation = getDeviceRotation()
-    while getAngleDistance(currentRotation, toDegree) > CORRECTION_ACCURACY:
-        while (
-            getBestCorrectionDirection(currentRotation, toDegree) > CORRECTION_ACCURACY
-        ):
+    while(getAngleDistance(currentRotation, toDegree) > CORRECTION_ACCURACY):
+        while getBestCorrectionDirection(currentRotation, toDegree) > CORRECTION_ACCURACY:
+            #print("correction right")
             motorRight.run_for_rotations(-1 * CORRECTION_ROTATIONS, CORRECTION_SPEED)
             currentRotation = getDeviceRotation()
-        while getBestCorrectionDirection(currentRotation, toDegree) < (
-            -1 * CORRECTION_ACCURACY
-        ):
+        while getBestCorrectionDirection(currentRotation, toDegree) < ( -1 * CORRECTION_ACCURACY):
+            #print("correction left")
             motorLeft.run_for_rotations(1 * CORRECTION_ROTATIONS, CORRECTION_SPEED)
             currentRotation = getDeviceRotation()
 
-
 # toDegree is absolute angle in degree, direction < 0 is left and direction > 0 is right
 def rotate(toDegree, direction):
+    #TODO: rotate überarbeiten
     currentRotation = getDeviceRotation()
-    print(f"Rotation {currentRotation} Goal {toDegree}")
+    print("Current rotation:" + str(currentRotation))
+    print("Goal: " + str(toDegree))
     if direction > 0:
-        while (currentRotation - toDegree) > ROTATION_ACCURACY or (
-            (currentRotation - toDegree) < -1 * ROTATION_ACCURACY
-        ):
+        while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
             currentRotation = getDeviceRotation()
             motorRight.run_for_rotations(
                 -1 * getTurnRotations(currentRotation, toDegree),
@@ -280,9 +209,7 @@ def rotate(toDegree, direction):
             )
         correction(toDegree)
     elif direction < 0:
-        while (currentRotation - toDegree) > ROTATION_ACCURACY or (
-            (currentRotation - toDegree) < -1 * ROTATION_ACCURACY
-        ):
+        while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
             currentRotation = getDeviceRotation()
             motorLeft.run_for_rotations(
                 1 * getTurnRotations(currentRotation, toDegree),
@@ -290,15 +217,12 @@ def rotate(toDegree, direction):
             )
         correction(toDegree)
 
-
 # does turn the vehicle around for 180 degree
 def turnAround():
     currentRotation = getDeviceRotation()
     plannedRotation = getRotationGoalRight(currentRotation, 90)
     toDegree = plannedRotation
-    while (currentRotation - toDegree) > ROTATION_ACCURACY or (
-        (currentRotation - toDegree) < -1 * ROTATION_ACCURACY
-    ):
+    while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
         currentRotation = getDeviceRotation()
         motorRight.run_for_rotations(
             -1 * getTurnRotations(currentRotation, toDegree),
@@ -307,9 +231,7 @@ def turnAround():
     correction(toDegree)
     plannedRotation = getRotationGoalRight(currentRotation, 90)
     toDegree = plannedRotation
-    while (currentRotation - toDegree) > ROTATION_ACCURACY or (
-        (currentRotation - toDegree) < -1 * ROTATION_ACCURACY
-    ):
+    while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
         currentRotation = getDeviceRotation()
         motorLeft.run_for_rotations(
             -1 * getTurnRotations(currentRotation, toDegree),
@@ -317,8 +239,6 @@ def turnAround():
         )
     correction(toDegree)
 
-
-# defines the speed of thevehicle, the closer a wall in front the slower it is
 def speedToGo():
     frontDistance = distanceSensorFront.get_distance_cm()
     if frontDistance is None:
@@ -332,14 +252,13 @@ def speedToGo():
     else:
         return MAX_SPEED_CM_MOVE / 16
 
-
 def driveToNode(direction):
     global currentNode
     global lastDestination
     global currentDestination
     rot = getDeviceRotation()
     way = nodes[currentNode][directionPosition(direction[0], direction[1])]
-    print(f"Node {currentNode} LastNode {lastDestination} CurrentDestination {currentDestination} Way {way}")
+    print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
     distance = way[3]
     while distance > 5:
         motors.move(5, "cm", 0, 30)
@@ -350,84 +269,62 @@ def driveToNode(direction):
     lastDestination = currentNode
     currentNode = way[2]
 
+def checkColor():
+    return colorSensor.get_color() == "red"
 
-# MAIN BEGINS HERE -> Hub doesn't detect __name__ Variable, so .. :D
+
+def getLeastTraversedPartnerPosition(nodeid, traversions):
+    node = nodes[nodeid]
+    res = -1
+    minTrav = 9999999999
+    minDist = 9999999999
+    for i in range(1,5):
+        edge = node[i]
+        destination = edge[2]
+        distance = edge[3]
+        if  destination != -1:
+            if traversions[destination] < minTrav and distance < minDist:
+                res = i
+                minTrav = traversions[destination]
+                minDist = distance
+    return res
+
+
+
+
+def createPath():
+    current = 0
+    distance = 0
+    traversions = {}
+    traversednodes = 0
+    path = []
+    for n in nodes.keys:
+        traversions[n] = 0
+    while traversednodes < len(nodes.keys):
+        if traversions[current] == 0:
+            traversednodes += 1
+        traversions[current] += 1
+        nextPosition = getLeastTraversedPartnerPosition(current, traversions)
+        distance = nodes[current][nextPosition][3]
+        path.append([nextPosition, distance])
+        current = nodes[current][nextPosition][2]
+
+
+    
+
+# MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
-createEmptyNode(0)
+path = createPath()
 
-while mapping:
-    currentSpeed = speedToGo()
-    motors.move(currentSpeed, "cm", 0, 50)
-    currentDistanceFromLastNode = currentDistanceFromLastNode + currentSpeed
 
-    currentRotation = getDeviceRotation()
+while searching:
 
-    correction(aimedRotation)
+    if checkColor():
+        print("found")
+        searching = False
+    
+    if len(path) > 0:
+        #drive to next node on path
+    
 
-    distanceLeft = distanceSensorLeft.get_distance_cm()
-    distanceRight = distanceSensorRight.get_distance_cm()
 
-    frontHasObject = objectInFront()
-
-    if frontHasObject:
-        if distanceLeft is not None and distanceRight is not None:
-            print(f"Left {distanceLeft}")
-            print(f"Right {distanceRight}")
-            if currentDistanceFromLastNode > 25:
-                updateEdge(
-                    currentNode,
-                    currentDirection[0],
-                    currentDirection[1],
-                    currentDestination,
-                    currentDistanceFromLastNode,
-                )
-                lastDestination = currentNode
-                currentNode = currentDestination
-
-            print(f"Updated nodes {nodes}")
-            currentDistanceFromLastNode = 0
-            goalset = 0
-            if distanceRight >= MAX_WALL_DISTANCE_CM:
-                print("Turn Right")
-                plannedRotation = getRotationGoalRight(currentRotation, 90)
-                rotate(plannedRotation, 1)
-                aimedRotation = plannedRotation
-
-                if hasAlreadyCheckedDirection(currentNode, 1):
-                    driveToNode(getAbsoluteDirection(1))
-                else:
-                    currentNode = currentDestination
-                    nodeIdCounter = nodeIdCounter + 1
-                    currentDestination = nodeIdCounter
-                changeDirection(1)
-                goalset = 1
-            if distanceLeft >= MAX_WALL_DISTANCE_CM and goalset == 0:
-                print("Turn Left")
-                plannedRotation = getRotationGoalLeft(currentRotation, 90)
-                rotate(plannedRotation, -1)
-                aimedRotation = plannedRotation
-
-                if hasAlreadyCheckedDirection(currentNode, -1):
-                    driveToNode(getAbsoluteDirection(-1))
-                else:
-                    nodeIdCounter = nodeIdCounter + 1
-                    currentDestination = nodeIdCounter
-                changeDirection(-1)
-                goalset = 1
-            if goalset == 0:
-                print("Turn Around")
-                plannedRotation = getRotationGoalLeft(currentRotation, 180)
-                turnAround()
-                aimedRotation = plannedRotation
-
-                driveToNode(getAbsoluteDirection(0))
-                changeDirection(0)
-                nodeIdCounter = nodeIdCounter + 1
-                currentDestination = nodeIdCounter
-                goalset = 1
-
-        else:
-            if distanceLeft is None:
-                print("distanceLeft is NONE")
-            if distanceRight is None:
-                print("distanceRight is NONE")
