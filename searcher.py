@@ -60,6 +60,16 @@ plannedRotation = 0
 
 colorSensor = ColorSensor('F')
 
+def compareArrays(first, second) -> bool:
+    if len(first) != len(second):
+        return False
+
+    for i in range(0, len(first)):
+        if first[i] != second[i]:
+            return False
+
+    return True
+
 def directionPosition(directionX, directionY):
     ret = -1
     if directionX == 1:
@@ -252,22 +262,36 @@ def speedToGo():
     else:
         return MAX_SPEED_CM_MOVE / 16
 
-def driveToNode(direction):
+def checkIfNodeInFront():
+    if checkColor():
+        print("found")
+        searching = False
+        return True
+    return True
+
+def driveToNodeOnPosition(position):
     global currentNode
     global lastDestination
     global currentDestination
+    if(checkIfNodeInFront()):
+        return
     rot = getDeviceRotation()
-    way = nodes[currentNode][directionPosition(direction[0], direction[1])]
+    way = nodes[currentNode][position]
     print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
     distance = way[3]
     while distance > 5:
         motors.move(5, "cm", 0, 30)
         distance = distance - 5
+        if(checkIfNodeInFront()):
+            return
         correction(rot)
     motors.move(distance, "cm", 0, 30)
     correction(rot)
     lastDestination = currentNode
     currentNode = way[2]
+
+def driveToNode(direction):
+   driveToNodeOnPosition(directionPosition(direction[0], direction[1]))
 
 def checkColor():
     return colorSensor.get_color() == "red"
@@ -275,7 +299,7 @@ def checkColor():
 
 def getLeastTraversedPartnerPosition(nodeid, traversions):
     node = nodes[nodeid]
-    res = -1
+    res = (-1, -1)
     minTrav = 9999999999
     minDist = 9999999999
     for i in range(1,5):
@@ -283,8 +307,8 @@ def getLeastTraversedPartnerPosition(nodeid, traversions):
         destination = edge[2]
         distance = edge[3]
         if  destination != -1:
-            if traversions[destination] < minTrav and distance < minDist:
-                res = i
+            if traversions[destination] < minTrav or (traversions[destination] == minTrav and distance < minDist):
+                res = (destination ,i)
                 minTrav = traversions[destination]
                 minDist = distance
     return res
@@ -293,21 +317,61 @@ def getLeastTraversedPartnerPosition(nodeid, traversions):
 
 
 def createPath():
-    current = 0
+    current = currentNode
     distance = 0
     traversions = {}
     traversednodes = 0
     path = []
-    for n in nodes.keys:
+    for n in nodes.keys():
         traversions[n] = 0
-    while traversednodes < len(nodes.keys):
+    while traversednodes < len(nodes.keys()):
         if traversions[current] == 0:
             traversednodes += 1
         traversions[current] += 1
         nextPosition = getLeastTraversedPartnerPosition(current, traversions)
-        distance = nodes[current][nextPosition][3]
-        path.append([nextPosition, distance])
-        current = nodes[current][nextPosition][2]
+        distance = nodes[current][nextPosition[1]][3]
+        path.append([nextPosition[0],nextPosition[1], distance])
+        current = nodes[current][nextPosition[1]][2]
+        print(traversions)
+    return path
+
+def turnToEdge(currentRotation, position):
+    if compareArrays(currentDirection, [1,0]):
+        if position == 2:
+            goal = getRotationGoalRight(currentRotation, 90)
+            rotate(goal, 1)
+        if position == 3:
+            turnAround()
+        if position == 4:
+            goal = getRotationGoalLeft(currentRotation, 90)
+            rotate(goal, -1)
+    elif  compareArrays(currentDirection, [0,1]):
+        if position == 3:
+            goal = getRotationGoalRight(currentRotation, 90)
+            rotate(goal, 1)
+        if position == 4:
+            turnAround()
+        if position == 1:
+            goal = getRotationGoalLeft(currentRotation, 90)
+            rotate(goal, -1)
+    elif  compareArrays(currentDirection, [-1,0]):
+        if position == 4:
+            goal = getRotationGoalRight(currentRotation, 90)
+            rotate(goal, 1)
+        if position == 1:
+            turnAround()
+        if position == 2:
+            goal = getRotationGoalLeft(currentRotation, 90)
+            rotate(goal, -1)
+    elif  compareArrays(currentDirection, [0,-1]):
+        if position == 1:
+            goal = getRotationGoalRight(currentRotation, 90)
+            rotate(goal, 1)
+        if position == 2:
+            turnAround()
+        if position == 3:
+            goal = getRotationGoalLeft(currentRotation, 90)
+            rotate(goal, -1)
 
 
     
@@ -315,16 +379,17 @@ def createPath():
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
 path = createPath()
-
+visited = 0
 
 while searching:
+    
+    if len(path) > visited:
+        position = path[visited][1]
+        turnToEdge(aimedRotation, position)
+        aimedRotation = getDeviceRotation()
+        driveToNodeOnPosition(position)
+        visited += 1
 
-    if checkColor():
-        print("found")
-        searching = False
-    
-    if len(path) > 0:
-        #drive to next node on path
-    
+        
 
 
