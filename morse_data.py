@@ -1,5 +1,26 @@
 #!/usr/bin/env python3
 
+from mindstorms import (
+    MSHub,
+    Motor,
+    MotorPair,
+    ColorSensor,
+    DistanceSensor,
+    ForceSensor,
+    App,
+)
+from mindstorms.control import wait_for_seconds, wait_until, Timer
+from mindstorms.operator import (
+    greater_than,
+    greater_than_or_equal_to,
+    less_than,
+    less_than_or_equal_to,
+    equal_to,
+    not_equal_to,
+)
+
+hub = MSHub()
+
 # Knoten
 # (id, Kante1, Kante2, Kante3, Kante 4)
 # Kante
@@ -86,15 +107,11 @@ def demorse(morse_code):
 
 
 def display(morse_code):
+    character = []
     for character in morse_code:
-        if character == ".":
-            pass  # TODO Display a "short" on the Hub
-        elif character == "-":
-            pass  # TODO Display a "long" on the Hub
-        else:
-            pass  # Something went wrong
-    # TODO Display "next Code is coming" on the Hub
-    pass
+        if character == "." or character == "-":
+            hub.light_matrix.write(character)
+        hub.left_button.wait_until_pressed()
 
 
 def main():
