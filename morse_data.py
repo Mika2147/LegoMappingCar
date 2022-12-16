@@ -1,25 +1,10 @@
 #!/usr/bin/env python3
 
-from mindstorms import (
-    MSHub,
-    Motor,
-    MotorPair,
-    ColorSensor,
-    DistanceSensor,
-    ForceSensor,
-    App,
-)
-from mindstorms.control import wait_for_seconds, wait_until, Timer
-from mindstorms.operator import (
-    greater_than,
-    greater_than_or_equal_to,
-    less_than,
-    less_than_or_equal_to,
-    equal_to,
-    not_equal_to,
-)
+TESTING = False 
 
-hub = MSHub()
+if TESTING: 
+    from mindstorms import MSHub
+    hub = MSHub()
 
 # Knoten
 # (id, Kante1, Kante2, Kante3, Kante 4)
@@ -89,7 +74,7 @@ CODE = {
 
 
 def morse(character):
-    key = str(int(character))
+    key = str(character)
     if len(key) > 1:
         res = ""
         for value in key:
@@ -126,88 +111,17 @@ def main():
             if isinstance(element, list):
                 for value in element:
                     morsed_value = morse(value)
-                    display_morse(morsed_value)
-                #     print(morsed_value, " -> ", value)
-                # print()
-                display_next("E")
-        display_next("N")
-        # print()
+                    if TESTING:
+                        display_morse(morsed_value)
+                    print(value, "\t==>\t", morsed_value)
+                if TESTING:
+                    display_next("E")
+                print()
+
+        if TESTING:
+            display_next("N")
+
+        print()
 
 
 main()
-
-"""
-Der Knoten 0 hat folgende Elemente:
-[1, 0, 1, 48.5]
-[0, 1, -1, -1]
-[-1, 0, -1, -1]
-[0, -1, -1, -1]
-
-Der Knoten 1 hat folgende Elemente:
-[1, 0, -1, -1]
-[0, 1, 2, 112.0]
-[-1, 0, 0, 48.5]
-[0, -1, -1, -1]
-
-Der Knoten 2 hat folgende Elemente:
-[1, 0, 4, 48.0]
-[0, 1, -1, -1]
-[-1, 0, 3, 67.0]
-[0, -1, 1, 112.0]
-
-Der Knoten 3 hat folgende Elemente:
-[1, 0, 2, 67.0]
-[0, 1, -1, -1]
-[-1, 0, -1, -1]
-[0, -1, -1, -1]
-
-Der Knoten 4 hat folgende Elemente:
-[1, 0, -1, -1]
-[0, 1, -1, -1]
-[-1, 0, 2, 48.0]
-[0, -1, 5, 132.5]
-
-Der Knoten 5 hat folgende Elemente:
-[1, 0, -1, -1]
-[0, 1, 4, 132.5]
-[-1, 0, -1, -1]
-[0, -1, -1, -1]
-"""
-
-"""
-Der Knoten 0 hat folgende Elemente:
-.---- ----- .---- ....----..
------ .---- -....-.---- -....-.----
--....-.---- ----- -....-.---- -....-.----
------ -....-.---- -....-.---- -....-.----
-
-Der Knoten 1 hat folgende Elemente:
-.---- ----- -....-.---- -....-.----
------ .---- ..--- .----.----..---
--....-.---- ----- ----- ....----..
------ -....-.---- -....-.---- -....-.----
-
-Der Knoten 2 hat folgende Elemente:
-.---- ----- ....- ....----..
------ .---- -....-.---- -....-.----
--....-.---- ----- ...-- -....--...
------ -....-.---- .---- .----.----..---
-
-Der Knoten 3 hat folgende Elemente:
-.---- ----- ..--- -....--...
------ .---- -....-.---- -....-.----
--....-.---- ----- -....-.---- -....-.----
------ -....-.---- -....-.---- -....-.----
-
-Der Knoten 4 hat folgende Elemente:
-.---- ----- -....-.---- -....-.----
------ .---- -....-.---- -....-.----
--....-.---- ----- ..--- ....----..
------ -....-.---- ..... .----...--..---
-
-Der Knoten 5 hat folgende Elemente:
-.---- ----- -....-.---- -....-.----
------ .---- ....- .----...--..---
--....-.---- ----- -....-.---- -....-.----
------ -....-.---- -....-.---- -....-.----
-"""
