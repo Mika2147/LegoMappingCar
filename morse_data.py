@@ -93,7 +93,7 @@ def morse(character):
     if len(key) > 1:
         res = ""
         for value in key:
-            res += CODE[value]
+            res += CODE[value] + " "
     else:
         res = CODE[key]
 
