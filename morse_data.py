@@ -106,12 +106,17 @@ def demorse(morse_code):
             return key
 
 
-def display(morse_code):
+def display_morse(morse_code):
     character = []
     for character in morse_code:
         if character == "." or character == "-":
             hub.light_matrix.write(character)
         hub.left_button.wait_until_pressed()
+
+
+def display_next(character):
+    hub.light_matrix.write(character)
+    hub.right_button.wait_until_pressed()
 
 
 def main():
@@ -121,10 +126,12 @@ def main():
             if isinstance(element, list):
                 for value in element:
                     morsed_value = morse(value)
-                    display(morsed_value)
-                    print(morsed_value, " -> ", value)
-                print()
-        print()
+                    display_morse(morsed_value)
+                #     print(morsed_value, " -> ", value)
+                # print()
+                display_next("E")
+        display_next("N")
+        # print()
 
 
 main()
