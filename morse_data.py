@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Knoten
 # (id, Kante1, Kante2, Kante3, Kante 4)
 # Kante
