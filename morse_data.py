@@ -103,6 +103,17 @@ def display_next(character):
     hub.light_matrix.write(character)
     hub.right_button.wait_until_pressed()
 
+def receive():
+    pass
+
+def testing(to_morse, morsed_value="", next_value="", print_value="", value=""):
+    if TESTING:
+        if to_morse: 
+            display_morse(morsed_value)
+        else: 
+            display_next(next_value)
+    else:
+        print(print_value)
 
 def main():
     for node, data in nodes.items():
@@ -111,17 +122,10 @@ def main():
             if isinstance(element, list):
                 for value in element:
                     morsed_value = morse(value)
-                    if TESTING:
-                        display_morse(morsed_value)
-                    print(value, "\t==>\t", morsed_value)
-                if TESTING:
-                    display_next("E")
-                print()
+                    testing(True, morsed_value=morsed_value, print_value=f"{value}\t==>\t{morsed_value}")
+                testing(False, next_value="E", print_value="")
 
-        if TESTING:
-            display_next("N")
-
-        print()
+        testing(False, next_value="N", print_value="")
 
 
 main()
