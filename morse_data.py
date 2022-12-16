@@ -77,15 +77,21 @@ def morse(character):
     return res
 
 
-def demorse(character):
-    print(character)
+def demorse(morse_code):
     for key, value in CODE.items():
-        if value == character:
+        if value == morse_code:
             return key
 
 
-def display():
-    # TODO: Gebe den aktuellen Character auf dem Display des HUBs aus.
+def display(morse_code):
+    for character in morse_code:
+        if character == ".":
+            pass  # TODO Display a "short" on the Hub
+        elif character == "-":
+            pass  # TODO Display a "long" on the Hub
+        else:
+            pass  # Something went wrong
+    # TODO Display "next Code is coming" on the Hub
     pass
 
 
@@ -96,6 +102,7 @@ def main():
             if isinstance(element, list):
                 for value in element:
                     morsed_value = morse(value)
+                    display(morsed_value)
                     print(morsed_value, " -> ", value)
                 print()
         print()
