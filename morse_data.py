@@ -4,7 +4,6 @@ TESTING = False
 
 if TESTING:
     from mindstorms import MSHub, ForceSensor
-
     hub = MSHub()
 
 # Knoten
@@ -22,27 +21,32 @@ nodes = {
     5: [5, [1, 0, -1, -1], [0, 1, 4, 132.5], [-1, 0, -1, -1], [0, -1, -1, -1]],
 }
 
+SHORT = "."
+LONG = "-"
+EMPTY = "/"
+
 
 def generate_morse_codes():
     morse_codes = {
-        "-": "-....-",  # Negative Numbers
-        ".": ".-.-.-",  # Float Numbers
+        "-": LONG + SHORT * 3 + LONG,   # Minus for Negative Values
+        ".": (SHORT + LONG) * 3         # Dots for Floats
     }
-    template = ["-", "-", "-", "-", "-"]
+    template = [LONG, LONG, LONG, LONG, LONG]
     morse_codes["0"] = "".join(template)
     for index in range(0, 5):
-        template[index] = "."
+        template[index] = SHORT
         morse_codes[str(index + 1)] = "".join(template)
     for index in range(0, 4):
-        template[index] = "-"
+        template[index] = LONG
         morse_codes[str(index + 6)] = "".join(template)
+        template[index] = LONG
+    morse_codes["0"] = LONG   # Simplify '-----' to '-'
+    morse_codes["1"] = SHORT  # Simplify '.....' to '.'
     return morse_codes
 
 
 CODE = generate_morse_codes()
-SHORT = "." 
-LONG = "-" 
-EMPTY = "/"
+
 
 def morse(character):
     key = str(character)
@@ -54,25 +58,26 @@ def morse(character):
         res = CODE[key]
     return res
 
+
 def de_morse(morse_code):
     def compare(word):
-        for key, value in CODE.items():
-            if value == word: return key
+        return list(CODE.keys())[list(CODE.values()).index(word)]
+
     data = ""
-    result = []
-    for element in morse_code.split("//"):
+    res = []
+    for element in morse_code.split(EMPTY + EMPTY):
         element = element.strip()
         if " " in element:
             for word in element.split(" "):
                 data += str(compare(word))
             data += " "
         else:
-            if len(element) > 1:
+            if len(element) >= 1:
                 data += str(compare(element)) + " "
     for element in data.strip().split(" "):
-        result.append(int(element) if float(
-            element).is_integer() else float(element))
-    return result
+        res.append(int(element) if float(element).is_integer() else float(element))
+    return res
+
 
 def display_morse(morse_code):
     character = []
@@ -81,9 +86,11 @@ def display_morse(morse_code):
             hub.light_matrix.write(character)
         hub.left_button.wait_until_pressed()
 
+
 def display(character):
     hub.light_matrix.write(character)
     hub.left_button.wait_until_pressed()
+
 
 def receive():
     """
@@ -97,15 +104,21 @@ def receive():
         node[id] = [id]
         morsed_value = ""
         counter = 0
-        if hub.left_button.is_pressed(): morsed_value += "."  # Adding a Short
-        if hub.right_button.is_pressed(): morsed_value += "-"  # Adding a Long
-        # Adding a Space
+        if hub.left_button.is_pressed():
+            morsed_value += SHORT
+        if hub.right_button.is_pressed():
+            morsed_value += LONG
         if hub.left_button.is_pressed() and hub.left_button.is_pressed():
             counter += 1
-            morsed_value += "//"
-        if counter == 4: node[id].append(de_morse(morsed_value))  # Append Data to Node
-        if button_force.is_pressed(): id += 1  # Next Node
-        if button_force.is_pressed() and hub.left_button.is_pressed(): collecting = False  # stop
+            morsed_value += EMPTY + EMPTY
+        if counter == 4:
+            node[id].append(de_morse(morsed_value))
+        if button_force.is_pressed():
+            id += 1
+        if button_force.is_pressed() and hub.left_button.is_pressed():
+            collecting = False
+
+
 def main():
     for node, data in nodes.items():
         print(f"Der Knoten {node} hat folgende Elemente:")
@@ -119,10 +132,11 @@ def main():
                         value = splitted if not splitted.is_integer() else int(splitted)
                     morsed_value = morse(value)
                     morsed_word += morsed_value + " // "
-                #display_morse(morsed_word)
+                # display_morse(morsed_word)
                 print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
             morsed_word = ""
-        #display_morse("N")
+        # display_morse("N")
+
 
 if __name__ == "__main__":
     main()
