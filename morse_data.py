@@ -58,6 +58,7 @@ def morse(character):
         res = CODE[key]
     return res
 
+de_morse_counter = 0
 
 def de_morse(morse_code):
     def compare(word):
@@ -74,8 +75,18 @@ def de_morse(morse_code):
         else:
             if len(element) >= 1:
                 data += str(compare(element)) + " "
+    shorten = False
     for element in data.strip().split(" "):
-        res.append(int(element) if float(element).is_integer() else float(element))
+        if len(data.strip().split(" ")) == 2: 
+            res.append(int(element) if float(element).is_integer() else float(element))
+            shorten = True
+        else: 
+            res.append(int(element) if float(element).is_integer() else float(element))
+            shorten = False 
+    if shorten: 
+        res.append(-1)
+        res.append(-1)
+        # res.append(int(element) if float(element).is_integer() else float(element))
     return res
 
 
@@ -120,22 +131,31 @@ def receive():
 
 
 def main():
+    reconstructed = {}
     for node, data in nodes.items():
-        print(f"Der Knoten {node} hat folgende Elemente:")
+        # print(f"Der Knoten {node} hat folgende Elemente:", end="")
+        reconstructed[node] = [node]
         morsed_word = ""
         for element in data:
             morsed_value = ""
             if isinstance(element, list):
-                for value in element:
-                    for splitted in str(value).strip().split(" "):
-                        splitted = float(splitted)
-                        value = splitted if not splitted.is_integer() else int(splitted)
-                    morsed_value = morse(value)
-                    morsed_word += morsed_value + " // "
+                if element[2] == -1:
+                    morsed_word = morse(element[0]) + " // " + morse(element[1]) + " // // "
+                else: 
+                    for value in element:
+                        for splitted in str(value).strip().split(" "):
+                            splitted = float(splitted)
+                            value = splitted if not splitted.is_integer() else int(splitted)
+                        morsed_value = morse(value)
+                        morsed_word += morsed_value + " // "
                 # display_morse(morsed_word)
-                print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
+                # print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
+                reconstructed[node].append(de_morse(morsed_word))
+            # print(morsed_word)
             morsed_word = ""
         # display_morse("N")
+    print("ORIGINAL DATA\n", nodes)
+    print("MORSED AND PREPARED DATA\n", reconstructed)
 
 
 if __name__ == "__main__":
