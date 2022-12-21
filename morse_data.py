@@ -30,21 +30,42 @@ WHITESPACE = " // "
 
 
 def generate_morse_codes():
-    morse_codes = {
-        "-": LONG + SHORT * 3 + LONG,   # Minus for Negative Values
-        ".": (SHORT + LONG) * 3         # Dots for Floats
-    }
-    template = [LONG, LONG, LONG, LONG, LONG]
-    morse_codes["0"] = NIL.join(template)
-    for index in range(0, 5):
-        template[index] = SHORT
-        morse_codes[str(index + 1)] = NIL.join(template)
-    for index in range(0, 4):
-        template[index] = LONG
-        morse_codes[str(index + 6)] = NIL.join(template)
-        template[index] = LONG
-    morse_codes["0"] = LONG   # Simplify '-----' to '-'
-    morse_codes["1"] = SHORT  # Simplify '.....' to '.'
+
+    # ==================== 
+    # ORIGINAL MORSE CODES
+    # ==================== 
+    # morse_codes = {
+    #     "-": LONG + SHORT * 3 + LONG,   # Minus for Negative Values
+    #     ".": (SHORT + LONG) * 3         # Dots for Floats
+    # }
+    # template = [LONG, LONG, LONG, LONG, LONG]
+    # morse_codes["0"] = NIL.join(template)
+    # for index in range(0, 5):
+    #     template[index] = SHORT
+    #     morse_codes[str(index + 1)] = NIL.join(template)
+    # for index in range(0, 4):
+    #     template[index] = LONG
+    #     morse_codes[str(index + 6)] = NIL.join(template)
+    #     template[index] = LONG
+
+    # ==================== 
+    # RAF's SHORTER VARIANT OF MORSE CODES
+    # ==================== 
+    morse_codes = {}
+    morse_codes["0"] = LONG 
+    morse_codes["1"] = SHORT
+    morse_codes["."] = SHORT + SHORT 
+    morse_codes["-"] = SHORT + LONG 
+    morse_codes["2"] = LONG + SHORT 
+    morse_codes["3"] = LONG + LONG 
+    morse_codes["4"] = SHORT + SHORT + SHORT
+    morse_codes["5"] = SHORT + LONG + LONG
+    morse_codes["6"] = LONG + SHORT + SHORT
+    morse_codes["7"] = LONG + LONG + LONG
+    morse_codes["8"] = SHORT + SHORT + SHORT + SHORT
+    morse_codes["9"] = SHORT + LONG + LONG + LONG
+    for key, value in morse_codes.items():
+        print(f"{key} -> {value}")
     return morse_codes
 
 
@@ -151,7 +172,7 @@ def main():
                 # display_morse(morsed_word)
                 # print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
                 reconstructed[node].append(de_morse(morsed_word))
-            # print(morsed_word)
+            print(morsed_word)
             morsed_word = NIL
         # display_morse("N")
     print("ORIGINAL DATA\n", nodes)
