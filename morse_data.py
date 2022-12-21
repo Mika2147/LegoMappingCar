@@ -24,6 +24,9 @@ nodes = {
 SHORT = "."
 LONG = "-"
 EMPTY = "/"
+BLANK = " " 
+NIL = "" 
+WHITESPACE = " // "
 
 
 def generate_morse_codes():
@@ -32,13 +35,13 @@ def generate_morse_codes():
         ".": (SHORT + LONG) * 3         # Dots for Floats
     }
     template = [LONG, LONG, LONG, LONG, LONG]
-    morse_codes["0"] = "".join(template)
+    morse_codes["0"] = NIL.join(template)
     for index in range(0, 5):
         template[index] = SHORT
-        morse_codes[str(index + 1)] = "".join(template)
+        morse_codes[str(index + 1)] = NIL.join(template)
     for index in range(0, 4):
         template[index] = LONG
-        morse_codes[str(index + 6)] = "".join(template)
+        morse_codes[str(index + 6)] = NIL.join(template)
         template[index] = LONG
     morse_codes["0"] = LONG   # Simplify '-----' to '-'
     morse_codes["1"] = SHORT  # Simplify '.....' to '.'
@@ -51,33 +54,31 @@ CODE = generate_morse_codes()
 def morse(character):
     key = str(character)
     if len(key) > 1:
-        res = ""
+        res = NIL
         for value in key:
-            res += CODE[value] + " "
+            res += CODE[value] + BLANK
     else:
         res = CODE[key]
     return res
-
-de_morse_counter = 0
 
 def de_morse(morse_code):
     def compare(word):
         return list(CODE.keys())[list(CODE.values()).index(word)]
 
-    data = ""
+    data = NIL
     res = []
     for element in morse_code.split(EMPTY + EMPTY):
         element = element.strip()
-        if " " in element:
-            for word in element.split(" "):
+        if BLANK in element:
+            for word in element.split(BLANK):
                 data += str(compare(word))
-            data += " "
+            data += BLANK
         else:
             if len(element) >= 1:
-                data += str(compare(element)) + " "
+                data += str(compare(element)) + BLANK
     shorten = False
-    for element in data.strip().split(" "):
-        if len(data.strip().split(" ")) == 2: 
+    for element in data.strip().split(BLANK):
+        if len(data.strip().split(BLANK)) == 2: 
             res.append(int(element) if float(element).is_integer() else float(element))
             shorten = True
         else: 
@@ -86,7 +87,6 @@ def de_morse(morse_code):
     if shorten: 
         res.append(-1)
         res.append(-1)
-        # res.append(int(element) if float(element).is_integer() else float(element))
     return res
 
 
@@ -113,7 +113,7 @@ def receive():
     button_force = ForceSensor("E")
     while collecting:
         node[id] = [id]
-        morsed_value = ""
+        morsed_value = NIL
         counter = 0
         if hub.left_button.is_pressed():
             morsed_value += SHORT
@@ -133,26 +133,26 @@ def receive():
 def main():
     reconstructed = {}
     for node, data in nodes.items():
-        # print(f"Der Knoten {node} hat folgende Elemente:", end="")
+        # print(f"Der Knoten {node} hat folgende Elemente:", end=NIL)
         reconstructed[node] = [node]
-        morsed_word = ""
+        morsed_word = NIL
         for element in data:
-            morsed_value = ""
+            morsed_value = NIL
             if isinstance(element, list):
                 if element[2] == -1:
-                    morsed_word = morse(element[0]) + " // " + morse(element[1]) + " // // "
+                    morsed_word = morse(element[0]) + WHITESPACE + morse(element[1]) + WHITESPACE * 2
                 else: 
                     for value in element:
-                        for splitted in str(value).strip().split(" "):
+                        for splitted in str(value).strip().split(BLANK):
                             splitted = float(splitted)
                             value = splitted if not splitted.is_integer() else int(splitted)
                         morsed_value = morse(value)
-                        morsed_word += morsed_value + " // "
+                        morsed_word += morsed_value + WHITESPACE 
                 # display_morse(morsed_word)
                 # print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
                 reconstructed[node].append(de_morse(morsed_word))
             # print(morsed_word)
-            morsed_word = ""
+            morsed_word = NIL
         # display_morse("N")
     print("ORIGINAL DATA\n", nodes)
     print("MORSED AND PREPARED DATA\n", reconstructed)
