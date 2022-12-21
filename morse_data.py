@@ -64,8 +64,8 @@ def generate_morse_codes():
     morse_codes["7"] = LONG + LONG + LONG
     morse_codes["8"] = SHORT + SHORT + SHORT + SHORT
     morse_codes["9"] = SHORT + LONG + LONG + LONG
-    for key, value in morse_codes.items():
-        print(f"{key} -> {value}")
+    # for key, value in morse_codes.items():
+    #     print(f"{key} -> {value}")
     return morse_codes
 
 
@@ -172,7 +172,7 @@ def main():
                 # display_morse(morsed_word)
                 # print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
                 reconstructed[node].append(de_morse(morsed_word))
-            print(morsed_word)
+            # print(morsed_word)
             morsed_word = NIL
         # display_morse("N")
     print("ORIGINAL DATA\n", nodes)
