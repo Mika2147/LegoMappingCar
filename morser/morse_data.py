@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
+from mindstorms import MSHub, Motor, MotorPair, ColorSensor, DistanceSensor, App
+from mindstorms.control import wait_for_seconds, wait_until, Timer
+from mindstorms.operator import greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, equal_to, not_equal_to
+import math
 
+hub = MSHub()
 
 TESTING = False
 
 if TESTING:
-    from mindstorms import MSHub, Motor, MotorPair, ColorSensor, DistanceSensor, App
-    from mindstorms.control import wait_for_seconds, wait_until, Timer
-    from mindstorms.operator import greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, equal_to, not_equal_to
-    import math
     from mindstorms import MSHub, ForceSensor
     hub = MSHub()
 
@@ -107,6 +107,7 @@ def de_morse(morse_code):
         else:
             res.append((element))
             shorten = False
+
     if shorten:
         res.append(-1)
         res.append(-1)
@@ -121,43 +122,56 @@ def display_morse(morse_code):
             hub.light_matrix.write("o")
         else:
             hub.light_matrix.write(character)
-        time.sleep(2)
+        time.sleep(1)
         hub.light_matrix.write("")
-        time.sleep(2)
+        time.sleep(1)
     hub.speaker.beep()
 
 
-# def receive():
-#     """
-#     TODO the logic is more or less done but not tested
-#     """
-#     node = {}
-#     collecting = True
-#     id = 0
-#     button_force = ForceSensor("E")
-#     while collecting:
-#         node[id] = [id]
-#         morsed_value = NIL
-#         counter = 0
-#         if hub.left_button.is_pressed():
-#             morsed_value += SHORT
-#         if hub.right_button.is_pressed():
-#             morsed_value += LONG
-#         if hub.left_button.is_pressed() and hub.left_button.is_pressed():
-#             counter += 1
-#             morsed_value += EMPTY + EMPTY
-#         if counter == 4:
-#             node[id].append(de_morse(morsed_value))
-#         if button_force.is_pressed():
-#             id += 1
-#         if button_force.is_pressed() and hub.left_button.is_pressed():
-#             collecting = False
+def receive():
+    node = {}
+    collecting = True
+    node_id = 0
+    b_empty = ColorSensor("B")
+    d_next = ColorSensor("D")
+    f_id = ColorSensor("F")
+    print("start collecting")
+    import time
+    morsed_value = NIL
+    counter = 0
+    while collecting:
+        node[node_id] = [node_id]
+        if hub.right_button.is_pressed():
+            morsed_value += "."
+            time.sleep(1)
+        elif hub.left_button.is_pressed():
+            morsed_value += "-"
+            time.sleep(1)
+        elif not_equal_to(b_empty.get_color(), None):
+            morsed_value += " "
+            time.sleep(1)
+        elif not_equal_to(d_next.get_color(), None):
+            morsed_value += "/"
+            time.sleep(1)
+            counter += 1
+        elif not_equal_to(f_id.get_color(), None):
+            node[node_id].append(de_morse(morsed_value))
+            print(de_morse(morsed_value))
+            morsed_value = NIL
+        else:
+            print(morsed_value)
+            if counter == 12:
+                node[node_id].append(de_morse(morsed_value))
+                node_id += 1
+                print("node id + 1", node_id)
+                counter = 0
+            hub.speaker.beep()
+    print(morsed_value)
 
-
-def main():
+def send():
+    print("start to precondition, morse and display")
     reconstructed = {}
     for node, data in nodes.items():
-        # print(f"Der Knoten {node} hat folgende Elemente:", end=NIL)
         reconstructed[node] = [node]
         morsed_word = NIL
         for element in data:
@@ -168,17 +182,17 @@ def main():
                 else:
                     for value in element:
                         for splitted in str(value).strip().split(BLANK):
-                            value = splitted
+                            value = splitted 
                         morsed_value = morse(value)
                         morsed_word += morsed_value + WHITESPACE
-                # print(f"{element} ==> {morsed_word} ==> {de_morse(morsed_word)}")
                 reconstructed[node].append(de_morse(morsed_word))
             print(morsed_word)
             display_morse(morsed_word)
             morsed_word = NIL
         display_morse("N")
-    # print("ORIGINAL DATA\n", nodes)
-    # print("MORSED AND PREPARED DATA\n", reconstructed)
+    print("ORIGINAL DATA\n", nodes)
+    print("MORSED AND PREPARED DATA\n", reconstructed)
 
+# send()
+receive()
 
-main()
