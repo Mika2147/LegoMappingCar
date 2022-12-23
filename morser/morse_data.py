@@ -126,34 +126,45 @@ def receive():
     node[node_id] = [node_id]
     collecting = True
     morsed_value = NIL
+    waiting_counter = 0
     while collecting:
         if hub.right_button.is_pressed():
             morsed_value += SHORT
             time.sleep(1)
             display_morse("S", False)
+            wainting_counter = 0
         elif hub.left_button.is_pressed():
             morsed_value += LONG
             time.sleep(1)
             display_morse("L", False)
+            wainting_counter = 0
         elif not_equal_to(b_empty.get_color(), None):
             morsed_value += BLANK
             time.sleep(1)
             display_morse("_", False)
+            wainting_counter = 0
         elif not_equal_to(d_next.get_color(), None):
             morsed_value += WHITESPACE
             time.sleep(1)
             display_morse("/", False)
+            wainting_counter = 0
         elif not_equal_to(f_id.get_color(), None):
+            wainting_counter += 1
             if len(morsed_value) > 1:
                 tmp = de_morse(morsed_value)
                 morsed_value = NIL
                 node[node_id].append(tmp)
                 print(tmp, node)
         else:
-            print(morsed_value, node)
+            waiting_counter += 1
+            print(morsed_value, node, waiting_counter)
             hub.speaker.beep()
             if len(node[node_id]) == 5:
                 node_id += 1
+            if waiting_counter == 20: 
+                waiting_counter = 0
+                collecting = False
+                display_morse("F")
 
 
 def send():
