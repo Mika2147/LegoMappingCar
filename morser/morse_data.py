@@ -132,24 +132,24 @@ def receive():
             morsed_value += SHORT
             time.sleep(1)
             display_morse("S", False)
-            wainting_counter = 0
+            waiting_counter = 0
         elif hub.left_button.is_pressed():
             morsed_value += LONG
             time.sleep(1)
             display_morse("L", False)
-            wainting_counter = 0
+            waiting_counter = 0
         elif not_equal_to(b_empty.get_color(), None):
             morsed_value += BLANK
             time.sleep(1)
             display_morse("_", False)
-            wainting_counter = 0
+            waiting_counter = 0
         elif not_equal_to(d_next.get_color(), None):
             morsed_value += WHITESPACE
             time.sleep(1)
             display_morse("/", False)
-            wainting_counter = 0
+            waiting_counter = 0
         elif not_equal_to(f_id.get_color(), None):
-            wainting_counter += 1
+            waiting_counter += 1
             if len(morsed_value) > 1:
                 tmp = de_morse(morsed_value)
                 morsed_value = NIL
