@@ -132,7 +132,7 @@ def receive():
             morsed_value += SHORT
             time.sleep(1)
             display_morse("S", False)
-            waiting_counter = 0
+            wainting_counter = 0
         elif hub.left_button.is_pressed():
             morsed_value += LONG
             time.sleep(1)
@@ -161,7 +161,7 @@ def receive():
             hub.speaker.beep()
             if len(node[node_id]) == 5:
                 node_id += 1
-            if waiting_counter == 20: 
+            if waiting_counter == 100: 
                 waiting_counter = 0
                 collecting = False
                 display_morse("F")
@@ -186,5 +186,5 @@ def send():
             morsed_word = NIL
         display_morse("N")
 
-# send()
+#send()
 receive()
