@@ -1,19 +1,25 @@
-from mindstorms import MSHub, Motor, MotorPair, ColorSensor, DistanceSensor, App
-from mindstorms.control import wait_for_seconds, wait_until, Timer
-from mindstorms.operator import greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, equal_to, not_equal_to
-import math, time
+from mindstorms import MSHub, ColorSensor
+from mindstorms.operator import not_equal_to
+import time, sys
 
 hub = MSHub()
 
-TESTING = False
+"""
+TODO:Fehlerbehandlung: Was tun wenn man sich verklickt hat. Es gibt im offiziellen
+        Morsealphabet einen Code welcher für (Fehler; Irrung; Wiederholung ab letztem
+        vollständigen Wort) steht. Damit kann das letzte Wort gelöscht werden. Das
+        einzige Problem ist, der User muss sich den dargestellten Code aufschreiben um
+        diesen dann Händisch einzutippen. Würde der User den Code direkt eintippen wäre
+        eine Fehlerbehandlung nicht mehr Möglich.
+        Der Offizieller Code: EEEEEEEE -> ..... . . . wird so übernommen.
+"""
 
 try:
     b_empty = ColorSensor("B")
     d_next = ColorSensor("D")
     f_id = ColorSensor("F")
 except Exception:
-    print("Not every Sensor is correct pluged in!")
-    import sys
+    print("Not every Morse Sensor is pluged in correctly!")
     sys.exit(0)
 
 nodes = {
@@ -54,6 +60,8 @@ def generate_morse_codes():
     morse_codes["8"] = LONG + LONG + LONG
 
     morse_codes["9"] = SHORT + SHORT + SHORT + SHORT
+
+    morse_codes["E"] = SHORT * 5 + (BLANK + SHORT) * 3
 
     return morse_codes
 
@@ -98,6 +106,7 @@ def de_morse(morse_code):
     if shorten:
         res.append(-1)
         res.append(-1)
+    print("de_morse() res=", res)
     return res
 
 
@@ -132,7 +141,7 @@ def receive():
             morsed_value += SHORT
             time.sleep(1)
             display_morse("S", False)
-            wainting_counter = 0
+            waiting_counter = 0
         elif hub.left_button.is_pressed():
             morsed_value += LONG
             time.sleep(1)
@@ -161,7 +170,7 @@ def receive():
             hub.speaker.beep()
             if len(node[node_id]) == 5:
                 node_id += 1
-            if waiting_counter == 100: 
+            if waiting_counter == 100:
                 waiting_counter = 0
                 collecting = False
                 display_morse("F")
@@ -186,5 +195,8 @@ def send():
             morsed_word = NIL
         display_morse("N")
 
-#send()
+# send() 
 receive()
+
+
+# ./-/./..- --- /
