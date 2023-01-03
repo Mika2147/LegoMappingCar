@@ -47,6 +47,7 @@ currentDirection = [1, 0]
 currentDistanceFromLastNode = 0
 currentNode = 0
 currentDestination = 1
+lastDestination = 0
 searching = True
 
 hub = MSHub()
@@ -54,6 +55,7 @@ hub = MSHub()
 motorLeft = Motor("A")
 motorRight = Motor("B")
 motors = MotorPair("A", "B")
+motors.set_motor_rotation((-11.5 * 1.5) , 'cm')
 
 currentRotation = 0
 plannedRotation = 0
@@ -267,7 +269,7 @@ def checkIfNodeInFront():
         print("found")
         searching = False
         return True
-    return True
+    return False
 
 def driveToNodeOnPosition(position):
     global currentNode
@@ -291,7 +293,7 @@ def driveToNodeOnPosition(position):
     currentNode = way[2]
 
 def driveToNode(direction):
-   driveToNodeOnPosition(directionPosition(direction[0], direction[1]))
+    driveToNodeOnPosition(directionPosition(direction[0], direction[1]))
 
 def checkColor():
     return colorSensor.get_color() == "red"
@@ -306,7 +308,7 @@ def getLeastTraversedPartnerPosition(nodeid, traversions):
         edge = node[i]
         destination = edge[2]
         distance = edge[3]
-        if  destination != -1:
+        if destination != -1:
             if traversions[destination] < minTrav or (traversions[destination] == minTrav and distance < minDist):
                 res = (destination ,i)
                 minTrav = traversions[destination]
@@ -324,7 +326,7 @@ def createPath():
     path = []
     for n in nodes.keys():
         traversions[n] = 0
-    while traversednodes < len(nodes.keys()):
+    while traversednodes < len(nodes):
         if traversions[current] == 0:
             traversednodes += 1
         traversions[current] += 1
@@ -332,7 +334,7 @@ def createPath():
         distance = nodes[current][nextPosition[1]][3]
         path.append([nextPosition[0],nextPosition[1], distance])
         current = nodes[current][nextPosition[1]][2]
-        print(traversions)
+        #print(traversions)
     return path
 
 def turnToEdge(currentRotation, position):
@@ -345,7 +347,7 @@ def turnToEdge(currentRotation, position):
         if position == 4:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
-    elif  compareArrays(currentDirection, [0,1]):
+    elif compareArrays(currentDirection, [0,1]):
         if position == 3:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
@@ -354,7 +356,7 @@ def turnToEdge(currentRotation, position):
         if position == 1:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
-    elif  compareArrays(currentDirection, [-1,0]):
+    elif compareArrays(currentDirection, [-1,0]):
         if position == 4:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
@@ -363,7 +365,7 @@ def turnToEdge(currentRotation, position):
         if position == 2:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
-    elif  compareArrays(currentDirection, [0,-1]):
+    elif compareArrays(currentDirection, [0,-1]):
         if position == 1:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
@@ -374,7 +376,7 @@ def turnToEdge(currentRotation, position):
             rotate(goal, -1)
 
 
-    
+
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
@@ -382,14 +384,22 @@ path = createPath()
 visited = 0
 
 while searching:
-    
+    print(path)
     if len(path) > visited:
+        print("get position")
         position = path[visited][1]
+        print("position: " + str(position))
+        print("turn to edge start")
         turnToEdge(aimedRotation, position)
+        print("turn to edge stop")
+        print("get aimed rotation")
         aimedRotation = getDeviceRotation()
+        print("aimed rotation: " + str(aimedRotation))
+        print("start drive to node on postion")
         driveToNodeOnPosition(position)
+        print("stop drive to node on postion")
         visited += 1
 
-        
+
 
 
