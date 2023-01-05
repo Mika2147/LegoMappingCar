@@ -330,15 +330,15 @@ def initDistanceDict():
             else:
                 distance[i].append(0)
                 predecesour[i][j] = i
-                
-#Path Bestandteil = (Zielknoten, Kantennumer, Distanz)              
+
+#Path Bestandteil = (Zielknoten, Kantennumer, Distanz)
 def createPathToNode(start, goal):
     global distance
     global predecesour
     q = []
     for i in range(0, len(nodes)):
         q.append(i)
-    
+
     while len(q) > 0:
         v = q[0]
         for j in q:
@@ -352,9 +352,9 @@ def createPathToNode(start, goal):
                 if (distance[start][v] + edgew[3]) < distance[start][nodew]:
                     distance[start][nodew] = distance[start][v] + edgew[3]
                     predecesour[start][nodew] = v
-      
+
     #print(distance)
-    #print(predecesour)              
+    #print(predecesour)
     res = []
     v = goal
     while v != start:
@@ -390,45 +390,58 @@ def turnToEdge(currentRotation, position):
         if position == 2:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
+            changeDirection(1)
         if position == 3:
             turnAround()
+            changeDirection(0)
         if position == 4:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
+            changeDirection(-1)
     elif compareArrays(currentDirection, [0,1]):
         if position == 3:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
+            changeDirection(1)
         if position == 4:
             turnAround()
+            changeDirection(0)
         if position == 1:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
+            changeDirection(-1)
     elif compareArrays(currentDirection, [-1,0]):
         if position == 4:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
+            changeDirection(1)
         if position == 1:
             turnAround()
+            changeDirection(0)
         if position == 2:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
+            changeDirection(-1)
     elif compareArrays(currentDirection, [0,-1]):
         if position == 1:
             goal = getRotationGoalRight(currentRotation, 90)
             rotate(goal, 1)
+            changeDirection(1)
         if position == 2:
             turnAround()
+            changeDirection(0)
         if position == 3:
             goal = getRotationGoalLeft(currentRotation, 90)
             rotate(goal, -1)
+            changeDirection(-1)
 
 
 
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
-path = createPathToNode(0, 4)
+initDistanceDict()
+path = createPathToNode(0, 3)
 visited = 0
 
 while searching:
