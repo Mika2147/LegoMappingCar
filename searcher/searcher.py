@@ -41,7 +41,8 @@ CORRECTION_ACCURACY = 1
 # -1 means unknown
 # -2 means no destiantion
 nodes = {0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 1: [1, [1, 0, -1, -1], [0, 1, 2, 112.0], [-1, 0, 0, 48.5], [0, -1, -1, -1]], 2: [2, [1, 0, 4, 48.0], [0, 1, -1, -1], [-1, 0, 3, 67.0], [0, -1, 1, 112.0]], 3: [3, [1, 0, 2, 67.0], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 4: [4, [1, 0, -1, -1], [0, 1, -1, -1], [-1, 0, 2, 48.0], [0, -1, 5, 132.5]], 5: [5, [1, 0, -1, -1], [0, 1, 4, 132.5], [-1, 0, -1, -1], [0, -1, -1, -1]]}
-
+distance = {}
+predecesour = {}
 # defines the direction the vehicle is moving in the map
 currentDirection = [1, 0]
 currentDistanceFromLastNode = 0
@@ -316,9 +317,57 @@ def getLeastTraversedPartnerPosition(nodeid, traversions):
     return res
 
 
+def initDistanceDict():
+    global distance
+    global predecesour
+    for i in range(0, len(nodes)):
+        distance[i] = []
+        predecesour[i] = {}
+        for j in range(0, len(nodes)):
+            if j != i:
+                distance[i].append(9999999999)
+                predecesour[i][j] = -1
+            else:
+                distance[i].append(0)
+                predecesour[i][j] = i
+                
+#Path Bestandteil = (Zielknoten, Kantennumer, Distanz)              
+def createPathToNode(start, goal):
+    global distance
+    global predecesour
+    q = []
+    for i in range(0, len(nodes)):
+        q.append(i)
+    
+    while len(q) > 0:
+        v = q[0]
+        for j in q:
+            if(distance[start][j] < distance[start][v]):
+                v = j
+        q.remove(v)
+        for w in range(1, len(nodes[v])):
+            edgew = nodes[v][w]
+            nodew = edgew[2]
+            if(q.count(nodew) > 0):
+                if (distance[start][v] + edgew[3]) < distance[start][nodew]:
+                    distance[start][nodew] = distance[start][v] + edgew[3]
+                    predecesour[start][nodew] = v
+      
+    #print(distance)
+    #print(predecesour)              
+    res = []
+    v = goal
+    while v != start:
+        vgoal = v
+        v = predecesour[start][vgoal]
+        for k in range(1, len(nodes[v])):
+            if nodes[v][k][2] == vgoal:
+                distance = nodes[v][k][3]
+                res.insert(0, [vgoal, k, distance])
+                break
+    return res
 
-
-def createPath():
+def createPathTroughLabyrinth():
     current = currentNode
     distance = 0
     traversions = {}
@@ -334,7 +383,6 @@ def createPath():
         distance = nodes[current][nextPosition[1]][3]
         path.append([nextPosition[0],nextPosition[1], distance])
         current = nodes[current][nextPosition[1]][2]
-        #print(traversions)
     return path
 
 def turnToEdge(currentRotation, position):
@@ -380,7 +428,7 @@ def turnToEdge(currentRotation, position):
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
-path = createPath()
+path = createPathToNode(0, 4)
 visited = 0
 
 while searching:
