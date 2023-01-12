@@ -1,18 +1,8 @@
 from mindstorms import MSHub, ColorSensor
-from mindstorms.operator import not_equal_to
+from mindstorms.operator import greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, equal_to, not_equal_to
 import time, sys
 
 hub = MSHub()
-
-"""
-TODO:Fehlerbehandlung: Was tun wenn man sich verklickt hat. Es gibt im offiziellen
-        Morsealphabet einen Code welcher für (Fehler; Irrung; Wiederholung ab letztem
-        vollständigen Wort) steht. Damit kann das letzte Wort gelöscht werden. Das
-        einzige Problem ist, der User muss sich den dargestellten Code aufschreiben um
-        diesen dann Händisch einzutippen. Würde der User den Code direkt eintippen wäre
-        eine Fehlerbehandlung nicht mehr Möglich.
-        Der Offizieller Code: EEEEEEEE -> ..... . . . wird so übernommen.
-"""
 
 try:
     b_empty = ColorSensor("B")
@@ -168,8 +158,9 @@ def receive():
             waiting_counter += 1
             print(morsed_value, node, waiting_counter)
             hub.speaker.beep()
-            if len(node[node_id]) == 5:
+            if len(node[node_id]) == 2:
                 node_id += 1
+                node[node_id] = [node_id]
             if waiting_counter == 100:
                 waiting_counter = 0
                 collecting = False
@@ -198,5 +189,10 @@ def send():
 # send() 
 receive()
 
-
 # ./-/./..- --- /
+# -/.//
+# .. . /-//
+# -/.. . //
+
+# ./-//
+# -/./.-/. . .- /
