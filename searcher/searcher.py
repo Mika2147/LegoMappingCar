@@ -32,7 +32,7 @@ CORRECTION_ROTATIONS = 0.01
 MAX_SPEED_CM_MOVE = 8
 
 ROTATION_ACCURACY = 10
-CORRECTION_ACCURACY = 1
+CORRECTION_ACCURACY = 0
 
 # Knoten
 # (id, Kante1, Kante2, Kante3, Kante 4)
@@ -40,7 +40,8 @@ CORRECTION_ACCURACY = 1
 # (Richtung x, Richtung y, Zielknoten, Entfernung)
 # -1 means unknown
 # -2 means no destiantion
-nodes = {0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 1: [1, [1, 0, -1, -1], [0, 1, 2, 112.0], [-1, 0, 0, 48.5], [0, -1, -1, -1]], 2: [2, [1, 0, 4, 48.0], [0, 1, -1, -1], [-1, 0, 3, 67.0], [0, -1, 1, 112.0]], 3: [3, [1, 0, 2, 67.0], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 4: [4, [1, 0, -1, -1], [0, 1, -1, -1], [-1, 0, 2, 48.0], [0, -1, 5, 132.5]], 5: [5, [1, 0, -1, -1], [0, 1, 4, 132.5], [-1, 0, -1, -1], [0, -1, -1, -1]]}
+#nodes = {0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 1: [1, [1, 0, -1, -1], [0, 1, 2, 112.0], [-1, 0, 0, 48.5], [0, -1, -1, -1]], 2: [2, [1, 0, 4, 48.0], [0, 1, -1, -1], [-1, 0, 3, 67.0], [0, -1, 1, 112.0]], 3: [3, [1, 0, 2, 67.0], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]], 4: [4, [1, 0, -1, -1], [0, 1, -1, -1], [-1, 0, 2, 48.0], [0, -1, 5, 132.5]], 5: [5, [1, 0, -1, -1], [0, 1, 4, 132.5], [-1, 0, -1, -1], [0, -1, -1, -1]]}
+nodes = {0: [0, [1,0,1,79.5],[0,1,-1,-1],[-1,0,-1,-1],[0,-1,-1,-1]], 1: [1, [1,0,-1,-1],[0,1,2,110.5],[-1,0,0,79.5],[0,-1,-1,-1]], 2: [2, [1,0,4,55.0],[0,1,-1,-1],[-1,0,3,58.5],[0,-1,1,110.5]], 3: [3, [1,0,2,58.5],[0,1,-1,-1],[-1,0,-1,-1],[0,-1,-1,-1]], 4: [4, [1,0,-1,-1],[0,1,-1,-1],[-1,0,2,55.0],[0,-1,5,119.0]], 5: [5, [1,0,-1,-1],[0,1,4,119.0],[-1,0,-1,-1],[0,-1,-1,-1]]}
 distance = {}
 predecesour = {}
 # defines the direction the vehicle is moving in the map
@@ -56,7 +57,7 @@ hub = MSHub()
 motorLeft = Motor("A")
 motorRight = Motor("B")
 motors = MotorPair("A", "B")
-motors.set_motor_rotation((-11.5 * 1.5) , 'cm')
+motors.set_motor_rotation((-9 * 2) , 'cm')
 
 currentRotation = 0
 plannedRotation = 0
@@ -209,7 +210,6 @@ def correction(toDegree):
 
 # toDegree is absolute angle in degree, direction < 0 is left and direction > 0 is right
 def rotate(toDegree, direction):
-    #TODO: rotate überarbeiten
     currentRotation = getDeviceRotation()
     print("Current rotation:" + str(currentRotation))
     print("Goal: " + str(toDegree))
@@ -252,19 +252,6 @@ def turnAround():
         )
     correction(toDegree)
 
-def speedToGo():
-    frontDistance = distanceSensorFront.get_distance_cm()
-    if frontDistance is None:
-        return 0
-    elif frontDistance > 30:
-        return MAX_SPEED_CM_MOVE
-    elif frontDistance > 20:
-        return MAX_SPEED_CM_MOVE / 2
-    elif frontDistance > 10:
-        return MAX_SPEED_CM_MOVE / 8
-    else:
-        return MAX_SPEED_CM_MOVE / 16
-
 def checkIfNodeInFront():
     if checkColor():
         print("found")
@@ -272,19 +259,20 @@ def checkIfNodeInFront():
         return True
     return False
 
-def driveToNodeOnPosition(position):
+def driveToNodeOnPosition(position, search):
     global currentNode
     global lastDestination
     global currentDestination
-    if(checkIfNodeInFront()):
+    if(checkIfNodeInFront() and search):
         return
     rot = getDeviceRotation()
     way = nodes[currentNode][position]
     print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
     distance = way[3]
-    while distance > 5:
-        motors.move(5, "cm", 0, 30)
-        distance = distance - 5
+    step = 25
+    while distance > step:
+        motors.move(step, "cm", 0, 30)
+        distance = distance - step
         if(checkIfNodeInFront()):
             return
         correction(rot)
@@ -293,8 +281,8 @@ def driveToNodeOnPosition(position):
     lastDestination = currentNode
     currentNode = way[2]
 
-def driveToNode(direction):
-    driveToNodeOnPosition(directionPosition(direction[0], direction[1]))
+def driveToNode(direction, search):
+    driveToNodeOnPosition(directionPosition(direction[0], direction[1]), search)
 
 def checkColor():
     return colorSensor.get_color() == "red"
@@ -320,6 +308,8 @@ def getLeastTraversedPartnerPosition(nodeid, traversions):
 def initDistanceDict():
     global distance
     global predecesour
+    distance = {}
+    predecesour = {}
     for i in range(0, len(nodes)):
         distance[i] = []
         predecesour[i] = {}
@@ -436,16 +426,23 @@ def turnToEdge(currentRotation, position):
             changeDirection(-1)
 
 
+def liftTarget():
+    for i in range(0, 10):
+        motors.move(1, "cm", 0, 30)
+    turnAround()
+    changeDirection(-1)
 
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
 initDistanceDict()
-path = createPathToNode(0, 3)
+startnode = 0
+endnode = 4
+path = createPathToNode(startnode, endnode)
 visited = 0
 
 while searching:
-    print(path)
+    print("path: " + str(path))
     if len(path) > visited:
         print("get position")
         position = path[visited][1]
@@ -457,7 +454,31 @@ while searching:
         aimedRotation = getDeviceRotation()
         print("aimed rotation: " + str(aimedRotation))
         print("start drive to node on postion")
-        driveToNodeOnPosition(position)
+        driveToNodeOnPosition(position, True)
+        print("stop drive to node on postion")
+        visited += 1
+    else:
+        searching = False
+ 
+liftTarget()
+
+visited = 0
+initDistanceDict()
+reversePath = createPathToNode(endnode, startnode)
+while len(reversePath) > visited:
+    print("reversed path: " + str(reversePath))
+    if len(reversePath) > visited:
+        print("get position")
+        position = reversePath[visited][1]
+        print("position: " + str(position))
+        print("turn to edge start")
+        turnToEdge(aimedRotation, position)
+        print("turn to edge stop")
+        print("get aimed rotation")
+        aimedRotation = getDeviceRotation()
+        print("aimed rotation: " + str(aimedRotation))
+        print("start drive to node on postion")
+        driveToNodeOnPosition(position, False)
         print("stop drive to node on postion")
         visited += 1
 
