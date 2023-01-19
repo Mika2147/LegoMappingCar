@@ -3,7 +3,9 @@ from mindstorms import (
     Motor,
     MotorPair,
     DistanceSensor,
+    ColorSensor
 )
+from mindstorms.operator import not_equal_to
 
 nodes = {
     0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]],
@@ -21,6 +23,8 @@ BLANK = " "
 NIL = ""
 # WHITESPACE = "//"
 WHITESPACE = EMPTY
+
+stop_sensor = ColorSensor("E")
 
 def generate_morse_codes():
     morse_codes = {}
@@ -516,6 +520,9 @@ while mapping:
             if distanceRight is None:
                 print("distanceRight is NONE")
 
-# TODO: Exit Loop to start sending!
+    if not_equal_to(stop_sensor.get_color(), None):
+        mapping = not mapping
 
-send() 
+
+print("sending morse data")
+send() # Send the Mapped Nodes Dict. through Morsing to Car 2
