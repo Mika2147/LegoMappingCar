@@ -18,9 +18,9 @@ from mindstorms.operator import (
 )
 import math, time
 
-b_empty = ColorSensor("B")
-d_next = ColorSensor("D")
-f_id = ColorSensor("F")
+b_empty = ColorSensor("E") # b o
+d_next = ColorSensor("C")  # d //
+f_id = ColorSensor("D")    # f _
 
 SHORT = "."
 LONG = "-"
@@ -591,8 +591,8 @@ def liftTarget():
 
 receive()
 
-if not len(nodes) > 1: 
-    import sys 
+if not len(nodes) > 1:
+    import sys
     sys.exit(0)
 
 # MAIN BEGINS HERE
