@@ -4,13 +4,9 @@ import time, sys
 
 hub = MSHub()
 
-try:
-    b_empty = ColorSensor("B")
-    d_next = ColorSensor("D")
-    f_id = ColorSensor("F")
-except Exception:
-    print("Not every Morse Sensor is pluged in correctly!")
-    sys.exit(0)
+b_empty = ColorSensor("B")
+d_next = ColorSensor("D")
+f_id = ColorSensor("F")
 
 nodes = {
     0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]],
