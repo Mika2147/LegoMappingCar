@@ -18,6 +18,105 @@ from mindstorms.operator import (
 )
 import math
 
+b_empty = ColorSensor("B")
+d_next = ColorSensor("D")
+f_id = ColorSensor("F")
+
+nodes = {
+    0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]],
+    1: [1, [1, 0, -1, -1], [0, 1, 2, 112.0], [-1, 0, 0, 48.5], [0, -1, -1, -1]],
+    2: [2, [1, 0, 4, 48.0], [0, 1, -1, -1], [-1, 0, 3, 67.0], [0, -1, 1, 112.0]],
+    3: [3, [1, 0, 2, 67.0], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]],
+    4: [4, [1, 0, -1, -1], [0, 1, -1, -1], [-1, 0, 2, 48.0], [0, -1, 5, 132.5]],
+    5: [5, [1, 0, -1, -1], [0, 1, 4, 132.5], [-1, 0, -1, -1], [0, -1, -1, -1]],
+}
+
+SHORT = "."
+LONG = "-"
+EMPTY = "/"
+BLANK = " "
+NIL = ""
+# WHITESPACE = "//"
+WHITESPACE = EMPTY
+
+def generate_morse_codes():
+    morse_codes = {}
+    morse_codes["0"] = LONG
+    morse_codes["1"] = SHORT
+
+    morse_codes["-"] = SHORT + SHORT
+    morse_codes["2"] = SHORT + LONG
+
+    morse_codes["3"] = SHORT + SHORT + SHORT
+    morse_codes["4"] = SHORT + SHORT + LONG
+
+    morse_codes["5"] = SHORT + LONG + SHORT
+    morse_codes["6"] = SHORT + LONG + LONG
+
+    morse_codes["5"] = LONG + SHORT + SHORT
+    morse_codes["6"] = LONG + SHORT + LONG
+
+    morse_codes["7"] = LONG + LONG + SHORT
+    morse_codes["8"] = LONG + LONG + LONG
+
+    morse_codes["9"] = SHORT + SHORT + SHORT + SHORT
+
+    morse_codes["E"] = SHORT * 5 + (BLANK + SHORT) * 3
+
+    return morse_codes
+
+
+CODE = generate_morse_codes()
+
+
+def morse(character):
+    key = str(character)
+    if len(key) > 1:
+        res = NIL
+        for value in key:
+            res += CODE[value] + BLANK
+    else:
+        res = CODE[key]
+    return res
+
+def display_morse(morse_code, wait=True):
+    character = []
+    import time
+    for character in morse_code.strip():
+        if character == BLANK:
+            hub.light_matrix.write("o")
+        elif character == SHORT:
+            hub.light_matrix.write("S")
+        elif character == LONG:
+            hub.light_matrix.write("L")
+        else:
+            hub.light_matrix.write(character)
+        if wait:
+            hub.right_button.wait_until_pressed()
+        time.sleep(1)
+        hub.light_matrix.write("")
+        time.sleep(1)
+    hub.speaker.beep()
+
+def send():
+    for _, data in nodes.items():
+        morsed_word = NIL
+        for element in data:
+            morsed_value = NIL
+            if isinstance(element, list):
+                if element[2] == -1:
+                    morsed_word = morse(element[0]) + WHITESPACE + morse(element[1]) + WHITESPACE * 2
+                else:
+                    for value in element:
+                        for splitted in str(int(value)).strip().split(BLANK):
+                            value = splitted
+                        morsed_value = morse(value)
+                        morsed_word += morsed_value + WHITESPACE
+            print(morsed_word)
+            display_morse(morsed_word)
+            morsed_word = NIL
+        display_morse("N")
+
 MAX_WALL_DISTANCE_CM = 30
 MAX_FRONT_DISTANCE_CM = 5
 
@@ -61,7 +160,6 @@ hub = MSHub()
 motorLeft = Motor("A")
 motorRight = Motor("B")
 motors = MotorPair("A", "B")
-motors.set_motor_rotation(17, 'cm')
 
 distanceSensorLeft = DistanceSensor("C")
 distanceSensorRight = DistanceSensor("D")
@@ -337,10 +435,7 @@ def speedToGo():
     else:
         return MAX_SPEED_CM_MOVE / 16
 
-def driveToNode(direction):
-    global currentNode
-    global lastDestination
-    global currentDestination
+def driveToNode(currentNode, direction):
     rot = getDeviceRotation()
     way = nodes[currentNode][directionPosition(direction[0], direction[1])]
     print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
@@ -353,7 +448,7 @@ def driveToNode(direction):
     correction(rot)
     lastDestination = currentNode
     currentNode = way[2]
-    
+
 
 
 # MAIN BEGINS HERE
@@ -399,7 +494,7 @@ while mapping:
                 aimedRotation = plannedRotation
 
                 if hasAlreadyCheckedDirection(currentNode, 1):
-                    driveToNode(getAbsoluteDirection(1))
+                    driveToNode(currentNode, getAbsoluteDirection(1))
                 else:
                     currentNode = currentDestination
                     nodeIdCounter = nodeIdCounter + 1
@@ -413,7 +508,7 @@ while mapping:
                 aimedRotation = plannedRotation
 
                 if hasAlreadyCheckedDirection(currentNode, -1):
-                    driveToNode(getAbsoluteDirection(-1))
+                    driveToNode(currentNode, getAbsoluteDirection(-1))
                 else:
                     nodeIdCounter = nodeIdCounter + 1
                     currentDestination = nodeIdCounter
@@ -425,7 +520,7 @@ while mapping:
                 turnAround()
                 aimedRotation = plannedRotation
 
-                driveToNode(getAbsoluteDirection(0))
+                driveToNode(currentNode, getAbsoluteDirection(0))
                 changeDirection(0)
                 nodeIdCounter = nodeIdCounter + 1
                 currentDestination = nodeIdCounter
@@ -437,3 +532,5 @@ while mapping:
                 print("distasnceLeft is NONE")
             if distanceRight is None:
                 print("distanceRight is NONE")
+
+send() # Send the Mapped Nodes Dict. through Morsing to Car 2
