@@ -16,8 +16,48 @@ from mindstorms.operator import (
     equal_to,
     not_equal_to,
 )
-import math
+import math, time
 
+b_empty = ColorSensor("B")
+d_next = ColorSensor("D")
+f_id = ColorSensor("F")
+
+SHORT = "."
+LONG = "-"
+EMPTY = "/"
+BLANK = " "
+NIL = ""
+# WHITESPACE = "//"
+WHITESPACE = EMPTY
+
+def generate_morse_codes():
+    morse_codes = {}
+    morse_codes["0"] = LONG
+    morse_codes["1"] = SHORT
+
+    morse_codes["-"] = SHORT + SHORT
+    morse_codes["2"] = SHORT + LONG
+
+    morse_codes["3"] = SHORT + SHORT + SHORT
+    morse_codes["4"] = SHORT + SHORT + LONG
+
+    morse_codes["5"] = SHORT + LONG + SHORT
+    morse_codes["6"] = SHORT + LONG + LONG
+
+    morse_codes["5"] = LONG + SHORT + SHORT
+    morse_codes["6"] = LONG + SHORT + LONG
+
+    morse_codes["7"] = LONG + LONG + SHORT
+    morse_codes["8"] = LONG + LONG + LONG
+
+    morse_codes["9"] = SHORT + SHORT + SHORT + SHORT
+
+    morse_codes["E"] = SHORT * 5 + (BLANK + SHORT) * 3
+
+    return morse_codes
+
+
+CODE = generate_morse_codes()
 
 MAX_TURN_ROTAIONS = 0.5
 MIN_TURN_ROTATIONS = 0.05
@@ -63,6 +103,102 @@ currentRotation = 0
 plannedRotation = 0
 
 colorSensor = ColorSensor('F')
+
+def display_morse(morse_code, wait=True):
+    character = []
+    import time
+    for character in morse_code.strip():
+        if character == BLANK:
+            hub.light_matrix.write("o")
+        elif character == SHORT:
+            hub.light_matrix.write("S")
+        elif character == LONG:
+            hub.light_matrix.write("L")
+        else:
+            hub.light_matrix.write(character)
+        if wait:
+            hub.right_button.wait_until_pressed()
+        time.sleep(1)
+        hub.light_matrix.write("")
+        time.sleep(1)
+    hub.speaker.beep()
+
+def de_morse(morse_code):
+    def compare(word):
+        return list(CODE.keys())[list(CODE.values()).index(word)]
+
+    data = NIL
+    res = []
+    for element in morse_code.split(EMPTY):
+        element = element.strip()
+        if BLANK in element:
+            for word in element.split(BLANK):
+                data += str(compare(word))
+            data += BLANK
+        else:
+            if len(element) >= 1:
+                data += str(compare(element)) + BLANK
+    shorten = False
+    for element in data.strip().split(BLANK):
+        if len(data.strip().split(BLANK)) == 2:
+            res.append((element))
+            shorten = True
+        else:
+            res.append((element))
+            shorten = False
+
+    if shorten:
+        res.append(-1)
+        res.append(-1)
+    print("de_morse() res=", res)
+    return res
+
+
+def receive():
+    node, node_id = {}, 0
+    node[node_id] = [node_id]
+    collecting = True
+    morsed_value = NIL
+    waiting_counter = 0
+    while collecting:
+        if hub.right_button.is_pressed():
+            morsed_value += SHORT
+            time.sleep(1)
+            display_morse("S", False)
+            waiting_counter = 0
+        elif hub.left_button.is_pressed():
+            morsed_value += LONG
+            time.sleep(1)
+            display_morse("L", False)
+            waiting_counter = 0
+        elif not_equal_to(b_empty.get_color(), None):
+            morsed_value += BLANK
+            time.sleep(1)
+            display_morse("_", False)
+            waiting_counter = 0
+        elif not_equal_to(d_next.get_color(), None):
+            morsed_value += WHITESPACE
+            time.sleep(1)
+            display_morse("/", False)
+            waiting_counter = 0
+        elif not_equal_to(f_id.get_color(), None):
+            waiting_counter += 1
+            if len(morsed_value) > 1:
+                tmp = de_morse(morsed_value)
+                morsed_value = NIL
+                node[node_id].append(tmp)
+                print(tmp, node)
+        else:
+            waiting_counter += 1
+            print(morsed_value, node, waiting_counter)
+            hub.speaker.beep()
+            if len(node[node_id]) == 2:
+                node_id += 1
+                node[node_id] = [node_id]
+            if waiting_counter == 100:
+                waiting_counter = 0
+                collecting = False
+                display_morse("F")
 
 def compareArrays(first, second) -> bool:
     if len(first) != len(second):
@@ -453,6 +589,11 @@ def liftTarget():
     for i in range(0, 10):
         motors.move(1, "cm", 0, 30)
 
+receive()
+
+if not len(nodes) > 1: 
+    import sys 
+    sys.exit(0)
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
