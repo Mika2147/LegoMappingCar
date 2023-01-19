@@ -2,25 +2,8 @@ from mindstorms import (
     MSHub,
     Motor,
     MotorPair,
-    ColorSensor,
     DistanceSensor,
-    ForceSensor,
-    App,
 )
-from mindstorms.control import wait_for_seconds, wait_until, Timer
-from mindstorms.operator import (
-    greater_than,
-    greater_than_or_equal_to,
-    less_than,
-    less_than_or_equal_to,
-    equal_to,
-    not_equal_to,
-)
-import math
-
-b_empty = ColorSensor("B")
-d_next = ColorSensor("D")
-f_id = ColorSensor("F")
 
 nodes = {
     0: [0, [1, 0, 1, 48.5], [0, 1, -1, -1], [-1, 0, -1, -1], [0, -1, -1, -1]],
@@ -438,7 +421,9 @@ def speedToGo():
 def driveToNode(currentNode, direction):
     rot = getDeviceRotation()
     way = nodes[currentNode][directionPosition(direction[0], direction[1])]
-    print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
+    # print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " current destiantion: " + str(currentDestination) + " way: " + str(way))
+    lastDestination = 0
+    print("Current node: " + str(currentNode) + " last node: " + str(lastDestination) + " way: " + str(way))
     distance = way[3]
     while distance > 5:
         motors.move(5, "cm", 0, 30)
@@ -448,8 +433,6 @@ def driveToNode(currentNode, direction):
     correction(rot)
     lastDestination = currentNode
     currentNode = way[2]
-
-
 
 # MAIN BEGINS HERE
 aimedRotation = getDeviceRotation()
@@ -533,4 +516,6 @@ while mapping:
             if distanceRight is None:
                 print("distanceRight is NONE")
 
-send() # Send the Mapped Nodes Dict. through Morsing to Car 2
+# TODO: Exit Loop to start sending!
+
+send() 
