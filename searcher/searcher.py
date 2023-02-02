@@ -3,24 +3,16 @@ from mindstorms import (
     Motor,
     MotorPair,
     ColorSensor,
-    DistanceSensor,
-    ForceSensor,
-    App,
 )
-from mindstorms.control import wait_for_seconds, wait_until, Timer
-from mindstorms.operator import (
-    greater_than,
-    greater_than_or_equal_to,
-    less_than,
-    less_than_or_equal_to,
-    equal_to,
-    not_equal_to,
-)
-import math, time
-
-b_empty = ColorSensor("E") # b o
-d_next = ColorSensor("C")  # d //
-f_id = ColorSensor("D")    # f _
+from mindstorms.operator import not_equal_to
+import time
+should_morse = True
+try:
+    b_empty = ColorSensor("E") # b o
+    d_next = ColorSensor("C")  # d //
+    f_id = ColorSensor("D")    # f _
+except: 
+    should_morse = False
 
 SHORT = "."
 LONG = "-"
@@ -589,7 +581,8 @@ def liftTarget():
     for i in range(0, 10):
         motors.move(1, "cm", 0, 30)
 
-receive()
+if should_morse:
+    receive()
 
 if not len(nodes) > 1:
     import sys
