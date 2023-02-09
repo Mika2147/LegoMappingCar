@@ -182,7 +182,7 @@ def send():
             morsed_word = NIL
         display_morse("N")
 
-# send() 
+# send()
 receive()
 
 # ./-/./..- --- /
