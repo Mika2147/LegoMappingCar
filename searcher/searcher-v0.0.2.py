@@ -36,13 +36,11 @@ def generate_morse_codes():
     morse_codes["5"] = SHORT + LONG + SHORT
     morse_codes["6"] = SHORT + LONG + LONG
 
-    morse_codes["5"] = LONG + SHORT + SHORT
-    morse_codes["6"] = LONG + SHORT + LONG
+    morse_codes["7"] = LONG + SHORT + SHORT
+    morse_codes["8"] = LONG + SHORT + LONG
 
-    morse_codes["7"] = LONG + LONG + SHORT
-    morse_codes["8"] = LONG + LONG + LONG
+    morse_codes["9"] = LONG + LONG + SHORT
 
-    morse_codes["9"] = SHORT + SHORT + SHORT + SHORT
 
     morse_codes["E"] = SHORT * 5 + (BLANK + SHORT) * 3
 
