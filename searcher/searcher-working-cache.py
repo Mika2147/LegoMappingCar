@@ -63,6 +63,8 @@ MAX_SPEED_CM_MOVE = 8
 ROTATION_ACCURACY = 10
 CORRECTION_ACCURACY = 0
 
+initial_rotation = 0
+
 # Knoten
 # (id, Kante1, Kante2, Kante3, Kante 4)
 # Kante
@@ -77,7 +79,7 @@ def getData():
         receive()
         print("I MORSED")
         import json
-        open("data.json", "w").write(json.dumps(nodes, indent=4))
+        open("data.json", "w").write(json.dumps(nodes))
         print("I WROTE THE FUCKING FILE")
     else:
         #import json
@@ -339,7 +341,9 @@ def getBestCorrectionDirection(current, goal) -> int:
 
 def correction(toDegree):
     currentRotation = getDeviceRotation()
+    print("correction()", getAngleDistance(currentRotation, toDegree), "acc", CORRECTION_ACCURACY, "+3=", CORRECTION_ACCURACY+3, "=", getAngleDistance(currentRotation, toDegree) > (CORRECTION_ACCURACY + 3))
     while(getAngleDistance(currentRotation, toDegree) > (CORRECTION_ACCURACY + 3)):
+        print("during +3 best", getBestCorrectionDirection(currentRotation, toDegree))
         while getBestCorrectionDirection(currentRotation, toDegree) > (CORRECTION_ACCURACY + 3):
             #print("correction right")
             motorRight.run_for_rotations(-4 * CORRECTION_ROTATIONS, 4* CORRECTION_SPEED)
@@ -348,7 +352,9 @@ def correction(toDegree):
             #print("correction left")
             motorLeft.run_for_rotations(4 * CORRECTION_ROTATIONS, 4 * CORRECTION_SPEED)
             currentRotation = getDeviceRotation()
+    print("correction()", getAngleDistance(currentRotation, toDegree), "acc", CORRECTION_ACCURACY, "+2=", CORRECTION_ACCURACY+2, "=", getAngleDistance(currentRotation, toDegree) > (CORRECTION_ACCURACY + 3))
     while(getAngleDistance(currentRotation, toDegree) > (CORRECTION_ACCURACY + 2)):
+        print("during +2 best", getBestCorrectionDirection(currentRotation, toDegree))
         while getBestCorrectionDirection(currentRotation, toDegree) > (CORRECTION_ACCURACY + 2):
             #print("correction right")
             motorRight.run_for_rotations(-2 * CORRECTION_ROTATIONS, 2* CORRECTION_SPEED)
@@ -357,7 +363,9 @@ def correction(toDegree):
             #print("correction left")
             motorLeft.run_for_rotations(2 * CORRECTION_ROTATIONS, 2 * CORRECTION_SPEED)
             currentRotation = getDeviceRotation()
+    print("correction()", getAngleDistance(currentRotation, toDegree), "acc", CORRECTION_ACCURACY, "+0=", CORRECTION_ACCURACY+0, "=", getAngleDistance(currentRotation, toDegree) > (CORRECTION_ACCURACY + 3))
     while(getAngleDistance(currentRotation, toDegree) > CORRECTION_ACCURACY):
+        print("during +1 best", getBestCorrectionDirection(currentRotation, toDegree))
         while getBestCorrectionDirection(currentRotation, toDegree) > CORRECTION_ACCURACY:
             #print("correction right")
             motorRight.run_for_rotations(-1 * CORRECTION_ROTATIONS, CORRECTION_SPEED)
@@ -379,6 +387,7 @@ def rotate(toDegree, direction):
                 -1 * getTurnRotations(currentRotation, toDegree),
                 getTurnSpeed(currentRotation, toDegree),
             )
+            print("rotate() Current rotation during correction:" + str(currentRotation))
         correction(toDegree)
     elif direction < 0:
         while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
@@ -394,26 +403,28 @@ def rotate(toDegree, direction):
 # does turn the vehicle around for 180 degree
 def turnAround():
     currentRotation = getDeviceRotation()
-    plannedRotation = getRotationGoalRight(currentRotation, 90)
+    plannedRotation = getRotationGoalLeft(currentRotation, 90)
     toDegree = plannedRotation
-    while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
-        currentRotation = getDeviceRotation()
-        motorRight.run_for_rotations(
-            -1 * getTurnRotations(currentRotation, toDegree),
-            getTurnSpeed(currentRotation, toDegree),
-        )
-    correction(toDegree)
-    currentRotation = getDeviceRotation()
-    plannedRotation = getRotationGoalRight(currentRotation, 90)
+    rotate(toDegree, -1)
+    #while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
+    #    currentRotation = getDeviceRotation()
+    #    motorRight.run_for_rotations(
+    #        getTurnRotations(currentRotation, toDegree),
+    #        getTurnSpeed(currentRotation, toDegree),
+    #    )
+    #correction(toDegree)
+    currentRotation = toDegree
+    plannedRotation = getRotationGoalLeft(toDegree, 90)
     toDegree = plannedRotation
-    while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
-        currentRotation = getDeviceRotation()
-        motorLeft.run_for_rotations(
-            -1 * getTurnRotations(currentRotation, toDegree),
-            getTurnSpeed(currentRotation, toDegree),
-        )
-    correction(toDegree)
-    currentRotation = getDeviceRotation()
+    rotate(toDegree, -1)
+    #while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
+    #    currentRotation = getDeviceRotation()
+    #    motorLeft.run_for_rotations(
+    #        getTurnRotations(currentRotation, toDegree),
+    #        getTurnSpeed(currentRotation, toDegree),
+    #    )
+    #correction(toDegree)
+    #currentRotation = getDeviceRotation()
 
 
 def checkIfNodeInFront():
@@ -435,6 +446,7 @@ def driveToNodeOnPosition(position, search):
     distance = way[3]
     step = 25
     while distance > step:
+        print("driveToNodeOnPosition()", distance > step, distance, step)
         motors.move(step, "cm", 0, 30)
         distance = distance - step
         if((search is True) and checkIfNodeInFront()):
@@ -540,6 +552,7 @@ def createPathTroughLabyrinth():
     return path
 
 def turnToEdge(currentRotation, position):
+    print("turnToEdge() currentRotation", currentRotation)
     if compareArrays(currentDirection, [1,0]):
         if position == 2:
             goal = getRotationGoalRight(currentRotation, 90)
@@ -601,6 +614,7 @@ if not len(nodes) > 1:
     sys.exit(0)
 
 # MAIN BEGINS HERE
+initial_rotation = getDeviceRotation()
 aimedRotation = getDeviceRotation()
 initDistanceDict()
 startnode = 0
@@ -633,6 +647,7 @@ visited = 0
 initDistanceDict()
 reversePath = createPathToNode(endnode, startnode)
 currentNode = endnode
+correction(aimedRotation)
 aimedRotation = getDeviceRotation()
 while len(reversePath) > visited:
     print("reversed path: " + str(reversePath))
