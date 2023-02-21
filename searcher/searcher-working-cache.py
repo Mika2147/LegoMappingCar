@@ -80,11 +80,12 @@ def getData():
         open("data.json", "w").write(json.dumps(nodes, indent=4))
         print("I WROTE THE FUCKING FILE")
     else:
-        #pass
+        #import json
+        #open("data.json", "w").write(json.dumps(nodes))
+        #print("Write Cache complete")
         nodes = open("data.json", "r").read()
         print("I READ THE FUCKING FILE")
     return nodes
-
 
 distance = {}
 predecesour = {}
