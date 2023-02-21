@@ -18,7 +18,7 @@ from mindstorms.operator import (
 )
 import math
 
-MAX_WALL_DISTANCE_CM = 30
+MAX_WALL_DISTANCE_CM = 40
 MAX_FRONT_DISTANCE_CM = 5
 
 MAX_TURN_ROTAIONS = 0.5
@@ -33,8 +33,8 @@ CORRECTION_ROTATIONS = 0.01
 
 MAX_SPEED_CM_MOVE = 8
 
-ROTATION_ACCURACY = 10
-CORRECTION_ACCURACY = 1
+ROTATION_ACCURACY = 15
+CORRECTION_ACCURACY = 0
 
 TURN_AROUND_OFFSET = 0
 
@@ -309,6 +309,7 @@ def turnAround():
             getTurnSpeed(currentRotation, toDegree),
         )
     correction(toDegree)
+    currentRotation = getDeviceRotation()
     plannedRotation = getRotationGoalRight(currentRotation, 90)
     toDegree = plannedRotation
     while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):

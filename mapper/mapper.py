@@ -395,6 +395,7 @@ def turnAround():
             getTurnSpeed(currentRotation, toDegree),
         )
     correction(toDegree)
+    currentRotation = getDeviceRotation()
     plannedRotation = getRotationGoalRight(currentRotation, 90)
     toDegree = plannedRotation
     while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
