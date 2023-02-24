@@ -403,28 +403,25 @@ def rotate(toDegree, direction):
 # does turn the vehicle around for 180 degree
 def turnAround():
     currentRotation = getDeviceRotation()
-    plannedRotation = getRotationGoalLeft(currentRotation, 90)
+    plannedRotation = getRotationGoalRight(currentRotation, 90)
     toDegree = plannedRotation
-    rotate(toDegree, -1)
-    #while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
-    #    currentRotation = getDeviceRotation()
-    #    motorRight.run_for_rotations(
-    #        getTurnRotations(currentRotation, toDegree),
-    #        getTurnSpeed(currentRotation, toDegree),
-    #    )
-    #correction(toDegree)
-    currentRotation = toDegree
-    plannedRotation = getRotationGoalLeft(toDegree, 90)
+    while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
+        currentRotation = getDeviceRotation()
+        motorLeft.run_for_rotations(
+            1 * getTurnRotations(currentRotation, toDegree),
+            getTurnSpeed(currentRotation, toDegree),
+        )
+    correction(toDegree)
+    currentRotation = getDeviceRotation()
+    plannedRotation = getRotationGoalRight(currentRotation, 90)
     toDegree = plannedRotation
-    rotate(toDegree, -1)
-    #while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
-    #    currentRotation = getDeviceRotation()
-    #    motorLeft.run_for_rotations(
-    #        getTurnRotations(currentRotation, toDegree),
-    #        getTurnSpeed(currentRotation, toDegree),
-    #    )
-    #correction(toDegree)
-    #currentRotation = getDeviceRotation()
+    while (currentRotation - toDegree) > ROTATION_ACCURACY or ( (currentRotation - toDegree) < -1 * ROTATION_ACCURACY):
+        currentRotation = getDeviceRotation()
+        motorRight.run_for_rotations(
+            1 * getTurnRotations(currentRotation, toDegree),
+            getTurnSpeed(currentRotation, toDegree),
+        )
+    correction(toDegree)
 
 
 def checkIfNodeInFront():
